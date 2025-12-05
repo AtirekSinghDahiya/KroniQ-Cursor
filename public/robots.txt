@@ -1,0 +1,29 @@
+# KroniQ AI - robots.txt
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://kroniq.ai/sitemap.xml
+
+# Crawl-delay for polite bots
+Crawl-delay: 1
+
+# Disallow admin/private areas (when authenticated app is accessed)
+Disallow: /admin
+Disallow: /settings
+Disallow: /profile
+Disallow: /billing
+
+# Allow all landing pages
+Allow: /
+Allow: /about
+Allow: /pricing
+Allow: /contact
+Allow: /services
+Allow: /careers
+Allow: /docs
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /security
+Allow: /promo

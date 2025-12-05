@@ -1,0 +1,32 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FFF0;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8A2BE2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00dcff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="90" stroke="url(#grad1)" stroke-width="4" fill="none" opacity="0.6"/>
+
+  <!-- Middle ring -->
+  <circle cx="100" cy="100" r="70" stroke="url(#grad1)" stroke-width="3" fill="none" opacity="0.8"/>
+
+  <!-- Inner circle with K -->
+  <circle cx="100" cy="100" r="50" fill="url(#grad1)" opacity="0.2"/>
+
+  <!-- Letter K -->
+  <path d="M 85 70 L 85 130 M 85 100 L 115 70 M 85 100 L 115 130"
+        stroke="url(#grad1)"
+        stroke-width="8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"/>
+
+  <!-- Decorative dots -->
+  <circle cx="100" cy="30" r="4" fill="#00FFF0"/>
+  <circle cx="170" cy="100" r="4" fill="#8A2BE2"/>
+  <circle cx="100" cy="170" r="4" fill="#00dcff"/>
+  <circle cx="30" cy="100" r="4" fill="#00FFF0"/>
+</svg>
