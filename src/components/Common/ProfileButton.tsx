@@ -65,12 +65,18 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('tokens_balance, current_tier, is_premium')
+          .select('tokens_balance, paid_tokens_balance, free_tokens_balance, user_type, is_paid, is_premium')
           .eq('id', currentUser.uid)
           .maybeSingle();
 
         if (!error && data) {
-          setTokenBalance(data.tokens_balance || 0);
+          const userType = data.user_type || (data.paid_tokens_balance > 0 ? 'paid' : 'free');
+          const paidTokens = data.paid_tokens_balance || 0;
+          const freeTokens = data.free_tokens_balance || 0;
+          // Use tokens_balance as primary, fallback to calculated total
+          const totalTokens = data.tokens_balance || (userType === 'paid' ? paidTokens : freeTokens);
+
+          setTokenBalance(totalTokens);
           setTier(data.is_premium ? 'premium' : data.current_tier || 'free');
         }
       } catch (err) {
@@ -291,19 +297,17 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
         <button
           data-drag-handle
           onClick={() => !isDragging && setShowProfilePopup(true)}
-          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all group backdrop-blur-xl shadow-lg hover:shadow-2xl ${!isDragging ? 'hover:scale-[1.02] active:scale-[0.98]' : 'scale-105'} ${
-            theme === 'light'
-              ? 'bg-white/95 border-2 border-gray-200 hover:border-[#00FFF0]/50'
-              : 'bg-black/95 border-2 border-[#00FFF0]/20 hover:border-[#00FFF0]/50'
-          }`}
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all group backdrop-blur-xl shadow-lg hover:shadow-2xl ${!isDragging ? 'hover:scale-[1.02] active:scale-[0.98]' : 'scale-105'} ${theme === 'light'
+            ? 'bg-white/95 border-2 border-gray-200 hover:border-[#00FFF0]/50'
+            : 'bg-black/95 border-2 border-[#00FFF0]/20 hover:border-[#00FFF0]/50'
+            }`}
         >
           <GripVertical className={`w-4 h-4 ${theme === 'light' ? 'text-gray-400' : 'text-[#00FFF0]/50'}`} />
 
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg ${
-            theme === 'light'
-              ? 'bg-gradient-to-br from-[#00FFF0] to-[#00D4D4] text-black'
-              : 'bg-gradient-to-br from-[#00FFF0] to-[#8A2BE2] text-white'
-          }`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg ${theme === 'light'
+            ? 'bg-gradient-to-br from-[#00FFF0] to-[#00D4D4] text-black'
+            : 'bg-gradient-to-br from-[#00FFF0] to-[#8A2BE2] text-white'
+            }`}>
             {userData?.photoURL ? (
               <img
                 src={userData.photoURL}
@@ -316,14 +320,12 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
           </div>
 
           <div className="flex flex-col items-start">
-            <span className={`text-xs font-semibold ${
-              theme === 'light' ? 'text-gray-600' : 'text-white/50'
-            }`}>
+            <span className={`text-xs font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-white/50'
+              }`}>
               Tokens
             </span>
-            <span className={`text-sm font-bold ${
-              theme === 'light' ? 'text-black' : 'text-[#00FFF0]'
-            }`}>
+            <span className={`text-sm font-bold ${theme === 'light' ? 'text-black' : 'text-[#00FFF0]'
+              }`}>
               {formatTokens(tokenBalance)}
             </span>
           </div>
@@ -386,11 +388,10 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
                     <Mail className="w-4 h-4" />
                     <span className="truncate">{currentUser.email}</span>
                   </div>
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    tier === 'premium'
-                      ? 'bg-gradient-to-r from-[#00FFF0]/20 to-[#8A2BE2]/20 border border-[#00FFF0]/50 text-[#00FFF0]'
-                      : 'bg-white/5 border border-white/10 text-white/70'
-                  }`}>
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${tier === 'premium'
+                    ? 'bg-gradient-to-r from-[#00FFF0]/20 to-[#8A2BE2]/20 border border-[#00FFF0]/50 text-[#00FFF0]'
+                    : 'bg-white/5 border border-white/10 text-white/70'
+                    }`}>
                     <Crown className="w-3 h-3" />
                     <span className="capitalize">{tier}</span>
                   </div>

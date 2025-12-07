@@ -12,6 +12,8 @@ import { CosmicBackground } from './components/Layout/CosmicBackground';
 import { MainChat } from './components/Chat/MainChat';
 import { UnifiedStudioChat } from './components/Chat/UnifiedStudioChat';
 import { AudioStudio } from './components/Chat/AudioStudio';
+import { ImageStudio } from './components/Chat/Studios/ImageStudio';
+import { VideoStudio } from './components/Chat/Studios/VideoStudio';
 import { ProjectsView } from './components/Projects/ProjectsView';
 // Studio components temporarily disabled
 // import { VoiceStudio } from './components/Studio/VoiceStudio';
@@ -80,6 +82,9 @@ const MainApp: React.FC = () => {
       code: 'code',
       design: 'design',
       video: 'video',
+      image: 'image',
+      music: 'music',
+      ppt: 'ppt',
       chat: 'chat',
     };
     const view = typeToView[project.type] || 'chat';
@@ -94,10 +99,16 @@ const MainApp: React.FC = () => {
         return <ProjectsView onOpenProject={handleOpenProject} />;
       case 'voice':
         return <AudioStudio onClose={() => navigateTo('chat')} />;
+      case 'image':
+        console.log('🎨 Rendering ImageStudio');
+        return <ImageStudio onClose={() => navigateTo('chat')} initialPrompt={activeProject?.name} projectId={activeProject?.id} />;
+      case 'video':
+        console.log('🎬 Rendering VideoStudio');
+        return <VideoStudio onClose={() => navigateTo('chat')} initialPrompt={activeProject?.name} projectId={activeProject?.id} />;
       case 'code':
       case 'design':
-      case 'video':
       case 'ppt':
+      case 'music':
         return <UnifiedStudioChat projectId={activeProject?.id} projectName={activeProject?.name} />;
       case 'billing':
         return <BillingView />;
@@ -117,7 +128,7 @@ const MainApp: React.FC = () => {
   };
 
   // Studios render independently (no sidebar/navbar)
-  if (['voice', 'code', 'design', 'video', 'ppt'].includes(currentView)) {
+  if (['voice', 'code', 'design', 'video', 'ppt', 'image', 'music'].includes(currentView)) {
     return (
       <div className="h-screen overflow-hidden bg-black relative">
         <div className="relative z-10 h-screen">

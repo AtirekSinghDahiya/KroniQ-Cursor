@@ -5,7 +5,7 @@ export interface SlideContent {
   title: string;
   content: string[];
   notes?: string;
-  layout?: 'title' | 'content' | 'section' | 'two-column' | 'big-number' | 'quote' | 'conclusion';
+  layout?: 'title' | 'content' | 'section' | 'two-column' | 'big-number' | 'quote' | 'conclusion' | 'title_slide' | 'content_slide' | 'data_visualization' | 'comparison_matrix' | 'timeline_flow' | 'executive_summary' | 'market_analysis' | 'competitive_landscape' | 'financial_projection' | 'conclusion_call_to_action';
 }
 
 export interface PPTGenerationOptions {
@@ -27,48 +27,57 @@ export async function generatePPTContent(options: PPTGenerationOptions): Promise
 
   console.log('🎯 Generating PPT content:', { topic, slideCount, theme });
 
-  const prompt = `Create a professional presentation outline about "${topic}" with exactly ${slideCount} slides.
+  const prompt = `Create an exceptional, visually stunning presentation about "${topic}" with exactly ${slideCount} slides. Design for maximum visual impact and executive-level communication.
 
+**CRITICAL DESIGN REQUIREMENTS:**
+1. **Premium Visual Design**: Each slide must have sophisticated design elements, gradients, professional layouts
+2. **Executive-Level Content**: Focus on strategic insights, data-driven content, compelling narratives
+3. **Modern Aesthetics**: Use ${theme} theme with contemporary design principles
+
+**SLIDE STRUCTURE:**
 For each slide, provide:
-1. Slide title (concise and clear)
-2. 3-5 bullet points of content (each max 10 words)
-3. Speaker notes (2-3 sentences)
+1. **Title**: Impactful, memorable headline (max 8 words)
+2. **Content**: 3-6 strategic bullet points with metrics, insights, or key takeaways
+3. **Visual Elements**: Describe premium design features (charts, icons, gradients, layouts)
+4. **Speaker Notes**: 3-4 sentences with deep strategic analysis
+5. **Layout**: Choose from: title_slide, content_slide, data_visualization, executive_summary, competitive_landscape, market_analysis, conclusion
 
-Theme: ${theme}
+**CONTENT FRAMEWORK:**
+- **Title Slide**: Hero design with compelling hook
+- **Content Slides**: Mix of data visualization, strategic insights, competitive analysis
+- **Executive Summary**: High-level overview with key metrics
+- **Conclusion**: Strong call-to-action with memorable close
 
-Return the response in this exact JSON format:
+**VISUAL EXCELLENCE:**
+- Use professional color schemes matching ${theme}
+- Incorporate data visualizations and strategic frameworks
+- Ensure visual hierarchy with proper typography
+- Include premium design elements (gradients, shadows, overlays)
+
+Return in this exact JSON format:
 {
-  "title": "Main presentation title",
-  "subtitle": "Brief subtitle or tagline",
+  "title": "Premium Executive Presentation Title",
+  "subtitle": "Strategic Intelligence & Market Leadership",
+  "theme": "${theme}",
+  "design_style": "premium_executive",
   "slides": [
     {
-      "title": "Slide 1 Title",
-      "content": ["Point 1", "Point 2", "Point 3"],
-      "notes": "Speaker notes here",
-      "layout": "title"
-    },
-    {
-      "title": "Slide 2 Title",
-      "content": ["Point 1", "Point 2", "Point 3", "Point 4"],
-      "notes": "Speaker notes here",
-      "layout": "content"
+      "title": "Executive Strategic Overview",
+      "content": ["Market opportunity: $X.XB TAM with XX% CAGR", "Competitive differentiation through proprietary technology", "Projected ROI: XXX% IRR with X-year payback"],
+      "visual_elements": "Large hero image with gradient overlay, KPI dashboard, executive portrait styling",
+      "notes": "This presentation represents a comprehensive strategic analysis of the ${topic} market opportunity. Our research indicates a $X.X billion total addressable market with accelerated growth driven by digital transformation trends.",
+      "layout": "title_slide",
+      "design_complexity": "high"
     }
   ]
-}
-
-Guidelines:
-- First slide should be title slide (layout: "title")
-- Last slide should be conclusion/thank you (layout: "conclusion")
-- Middle slides should be content slides (layout: "content")
-- Make content professional, clear, and actionable
-- Keep bullet points concise
-- Include relevant details in speaker notes`;
+}`;
 
   try {
     const response = await getOpenRouterResponse(
       prompt,
-      'moonshotai/kimi-k2-thinking',
-      []
+      [],
+      undefined,
+      'kimi-k2'
     );
 
     console.log('✅ Received AI response');
@@ -85,7 +94,7 @@ Guidelines:
     } catch (parseError) {
       console.error('❌ Failed to parse AI response:', parseError);
       console.log('Using fallback PPT generation');
-      pptData = createFallbackPPT(topic, slideCount, response);
+      pptData = createFallbackPPT(topic, slideCount);
     }
 
     // Ensure exact slide count
@@ -109,11 +118,11 @@ Guidelines:
   } catch (error) {
     console.error('❌ Error generating PPT content:', error);
     console.log('⚠️ Using emergency fallback for PPT');
-    return createFallbackPPT(topic, slideCount, '');
+    return createFallbackPPT(topic, slideCount);
   }
 }
 
-function createFallbackPPT(topic: string, slideCount: number, aiResponse: string): GeneratedPPT {
+function createFallbackPPT(topic: string, slideCount: number): GeneratedPPT {
   const slides: SlideContent[] = [];
 
   // Slide 1: Title slide
@@ -222,13 +231,13 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
 
   pptData.slides.forEach((slideData, index) => {
     const slide = pres.addSlide();
-    const layout = slideData.layout || 'content';
+    const layout = slideData.layout || 'content_slide';
 
-    if (layout === 'title') {
-      // TITLE SLIDE - Full gradient background
+    if (layout === 'title' || layout === 'title_slide') {
+      // PREMIUM TITLE SLIDE with stunning visuals
       slide.background = { color: theme.primary };
 
-      // Gradient overlay
+      // Full background gradient
       slide.addShape(pres.ShapeType.rect, {
         x: 0,
         y: 0,
@@ -237,56 +246,77 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
         fill: { color: theme.primary }
       });
 
-      // Large decorative circles
+      // Large decorative geometric shapes
       slide.addShape(pres.ShapeType.ellipse, {
-        x: 7,
-        y: 3.5,
-        w: 4,
-        h: 4,
-        fill: { color: theme.secondary, transparency: 60 }
+        x: 6,
+        y: 2,
+        w: 6,
+        h: 6,
+        fill: { color: theme.secondary, transparency: 30 }
       });
 
       slide.addShape(pres.ShapeType.ellipse, {
-        x: -1,
-        y: -1,
-        w: 3,
-        h: 3,
+        x: -2,
+        y: -2,
+        w: 4,
+        h: 4,
+        fill: { color: theme.accent, transparency: 25 }
+      });
+
+      // Triangle accent
+      slide.addShape(pres.ShapeType.triangle, {
+        x: 8.5,
+        y: 5.5,
+        w: 2,
+        h: 2,
         fill: { color: theme.accent, transparency: 40 }
       });
 
-      // Title
+      // Main title with premium typography
       slide.addText(slideData.title, {
-        x: 0.7,
-        y: 2.8,
+        x: 1,
+        y: 2,
         w: 8,
-        h: 1.8,
-        fontSize: 60,
+        h: 2,
+        fontSize: 72,
         bold: true,
         color: 'FFFFFF',
         align: 'left',
         valign: 'middle'
       });
 
-      // Subtitle
+      // Subtitle with elegant styling
       if (pptData.subtitle) {
         slide.addText(pptData.subtitle, {
-          x: 0.7,
-          y: 4.8,
+          x: 1,
+          y: 4.5,
           w: 7,
-          h: 0.7,
-          fontSize: 28,
-          color: theme.light,
+          h: 0.8,
+          fontSize: 32,
+          color: 'FFFFFF',
           align: 'left'
         });
       }
 
-      // Accent line
+      // Decorative accent line
       slide.addShape(pres.ShapeType.rect, {
-        x: 0.7,
-        y: 4.6,
-        w: 3,
-        h: 0.12,
+        x: 1,
+        y: 5.4,
+        w: 4,
+        h: 0.15,
         fill: { color: theme.accent }
+      });
+
+      // Powered by branding
+      slide.addText('Powered by KroniQ AI', {
+        x: 7,
+        y: 6.5,
+        w: 3,
+        h: 0.4,
+        fontSize: 16,
+        color: 'FFFFFF',
+        transparency: 70,
+        align: 'right'
       });
 
     } else if (layout === 'section') {
@@ -481,11 +511,101 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
         });
       });
 
-    } else {
-      // STANDARD CONTENT SLIDE
-      slide.background = { color: 'FAFAFA' };
+    } else if (layout === 'content' || layout === 'content_slide') {
+      // PREMIUM CONTENT SLIDE with sophisticated design
+      slide.background = { color: theme.primary };
 
-      // Colored header bar
+      // Full background with gradient
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: '100%',
+        fill: { color: theme.primary }
+      });
+
+      // Decorative geometric elements
+      slide.addShape(pres.ShapeType.triangle, {
+        x: 8.5,
+        y: 0.5,
+        w: 2,
+        h: 2,
+        fill: { color: theme.accent, transparency: 40 }
+      });
+
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: -1.5,
+        y: 5,
+        w: 3,
+        h: 3,
+        fill: { color: theme.secondary, transparency: 30 }
+      });
+
+      // Main content card with glassmorphism
+      slide.addShape(pres.ShapeType.rect, {
+        x: 1,
+        y: 0.8,
+        w: 8,
+        h: 5.5,
+        fill: { color: 'FFFFFF', transparency: 15 },
+        line: { color: 'FFFFFF', width: 3, transparency: 60 },
+        shadow: { type: 'outer', blur: 30, opacity: 0.2, offset: 5, angle: 90 }
+      });
+
+      // Title with premium typography
+      slide.addText(slideData.title, {
+        x: 1.5,
+        y: 1.2,
+        w: 7,
+        h: 0.8,
+        fontSize: 48,
+        bold: true,
+        color: theme.text,
+        align: 'left'
+      });
+
+      // Enhanced bullet points with icons and better spacing
+      slideData.content.forEach((point, i) => {
+        slide.addText([{
+          text: '▸  ',
+          options: { color: theme.accent, fontSize: 24, bold: true }
+        }, {
+          text: point,
+          options: { color: theme.text, fontSize: 28 }
+        }], {
+          x: 1.8,
+          y: 2.5 + (i * 0.9),
+          w: 6.5,
+          h: 0.8
+        });
+      });
+
+      // Accent line
+      slide.addShape(pres.ShapeType.rect, {
+        x: 1.5,
+        y: 2.2,
+        w: 4,
+        h: 0.08,
+        fill: { color: theme.accent }
+      });
+
+      // Slide number with elegant styling
+      slide.addText(`${index + 1}`, {
+        x: 8.5,
+        y: 6.2,
+        w: 1,
+        h: 0.6,
+        fontSize: 24,
+        bold: true,
+        color: 'FFFFFF',
+        align: 'center'
+      });
+
+    } else if (layout === 'data_visualization') {
+      // DATA VISUALIZATION SLIDE - Charts and metrics
+      slide.background = { color: 'FFFFFF' };
+
+      // Header with accent bar
       slide.addShape(pres.ShapeType.rect, {
         x: 0,
         y: 0,
@@ -494,80 +614,365 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
         fill: { color: theme.primary }
       });
 
-      // Accent stripe
-      slide.addShape(pres.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: 0.18,
-        h: 0.9,
-        fill: { color: theme.accent }
-      });
-
-      // Title
       slide.addText(slideData.title, {
         x: 0.6,
         y: 0.2,
         w: 8,
         h: 0.5,
-        fontSize: 34,
+        fontSize: 36,
         bold: true,
-        color: 'FFFFFF',
-        align: 'left'
+        color: 'FFFFFF'
       });
 
-      // Content card
-      slide.addShape(pres.ShapeType.rect, {
-        x: 0.7,
-        y: 1.6,
-        w: 8.6,
-        h: 4.6,
-        fill: { color: 'FFFFFF' },
-        shadow: { type: 'outer', blur: 20, opacity: 0.15, offset: 5, angle: 90 }
-      });
-
-      // Bullet points
+      // Data visualization area with multiple metrics
       slideData.content.forEach((point, i) => {
-        slide.addText([{
-          text: '◆  ',
-          options: { color: theme.accent, fontSize: 16, bold: true }
-        }, {
-          text: point,
-          options: { color: theme.text, fontSize: 20 }
-        }], {
-          x: 1.3,
-          y: 2.1 + (i * 0.75),
-          w: 7.4,
-          h: 0.6
+        const yPos = 1.5 + (i * 1.2);
+        // Metric box
+        slide.addShape(pres.ShapeType.rect, {
+          x: 0.8,
+          y: yPos,
+          w: 8,
+          h: 0.8,
+          fill: { color: theme.light },
+          line: { color: theme.primary, width: 2 }
+        });
+
+        slide.addText(point, {
+          x: 1.2,
+          y: yPos + 0.2,
+          w: 7,
+          h: 0.5,
+          fontSize: 24,
+          bold: true,
+          color: theme.primary
         });
       });
 
-      // Decorative corner
-      slide.addShape(pres.ShapeType.ellipse, {
-        x: 8.8,
-        y: -0.4,
-        w: 1.5,
-        h: 1.5,
-        fill: { color: theme.secondary, transparency: 60 }
-      });
+    } else if (layout === 'comparison_matrix') {
+      // COMPARISON MATRIX SLIDE
+      slide.background = { color: 'FFFFFF' };
 
-      // Footer
+      // Header
       slide.addShape(pres.ShapeType.rect, {
         x: 0,
-        y: 6.7,
+        y: 0,
         w: '100%',
-        h: 0.8,
-        fill: { color: theme.light }
+        h: 0.9,
+        fill: { color: theme.primary }
       });
 
-      slide.addText(`${index + 1}`, {
-        x: 9.2,
-        y: 6.85,
-        w: 0.6,
+      slide.addText(slideData.title, {
+        x: 0.6,
+        y: 0.2,
+        w: 8,
         h: 0.5,
-        fontSize: 18,
+        fontSize: 36,
         bold: true,
-        color: theme.primary,
+        color: 'FFFFFF'
+      });
+
+      // Comparison table
+      const items = slideData.content;
+      items.forEach((item, i) => {
+        const yPos = 1.2 + (i * 0.8);
+        slide.addShape(pres.ShapeType.rect, {
+          x: 0.5,
+          y: yPos,
+          w: 9,
+          h: 0.7,
+          fill: { color: i % 2 === 0 ? theme.light : 'F9FAFB' },
+          line: { color: theme.primary, width: 1 }
+        });
+
+        slide.addText(item, {
+          x: 0.8,
+          y: yPos + 0.2,
+          w: 8,
+          h: 0.4,
+          fontSize: 20,
+          color: theme.text
+        });
+      });
+
+    } else if (layout === 'timeline_flow') {
+      // TIMELINE FLOW SLIDE
+      slide.background = { color: theme.light };
+
+      // Header
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: 0.9,
+        fill: { color: theme.primary }
+      });
+
+      slide.addText(slideData.title, {
+        x: 0.6,
+        y: 0.2,
+        w: 8,
+        h: 0.5,
+        fontSize: 36,
+        bold: true,
+        color: 'FFFFFF'
+      });
+
+      // Timeline elements
+      slideData.content.forEach((point, i) => {
+        const xPos = 0.5 + (i * 2.2);
+        // Timeline dot
+        slide.addShape(pres.ShapeType.ellipse, {
+          x: xPos,
+          y: 1.5,
+          w: 0.3,
+          h: 0.3,
+          fill: { color: theme.accent }
+        });
+
+        // Timeline line
+        if (i < slideData.content.length - 1) {
+          slide.addShape(pres.ShapeType.rect, {
+            x: xPos + 0.3,
+            y: 1.65,
+            w: 1.9,
+            h: 0.05,
+            fill: { color: theme.accent }
+          });
+        }
+
+        // Content
+        slide.addText(point, {
+          x: xPos - 0.8,
+          y: 2.2,
+          w: 2.5,
+          h: 1,
+          fontSize: 16,
+          color: theme.text,
+          align: 'center'
+        });
+      });
+
+    } else if (layout === 'executive_summary') {
+      // EXECUTIVE SUMMARY SLIDE - Premium design
+      slide.background = { color: theme.primary };
+
+      // Decorative elements
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: 7,
+        y: 1,
+        w: 4,
+        h: 4,
+        fill: { color: theme.secondary, transparency: 30 }
+      });
+
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: -1,
+        y: -1,
+        w: 3,
+        h: 3,
+        fill: { color: theme.accent, transparency: 20 }
+      });
+
+      slide.addText(slideData.title, {
+        x: 0.7,
+        y: 1,
+        w: 8,
+        h: 1,
+        fontSize: 48,
+        bold: true,
+        color: 'FFFFFF'
+      });
+
+      // Summary points in elegant layout
+      slideData.content.forEach((point, i) => {
+        slide.addText(`✓ ${point}`, {
+          x: 0.7,
+          y: 2.5 + (i * 0.5),
+          w: 7,
+          h: 0.4,
+          fontSize: 24,
+          color: 'FFFFFF'
+        });
+      });
+
+    } else if (layout === 'market_analysis') {
+      // MARKET ANALYSIS SLIDE
+      slide.background = { color: 'FFFFFF' };
+
+      // Header with market focus
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: 0.9,
+        fill: { color: theme.primary }
+      });
+
+      slide.addText(slideData.title, {
+        x: 0.6,
+        y: 0.2,
+        w: 8,
+        h: 0.5,
+        fontSize: 36,
+        bold: true,
+        color: 'FFFFFF'
+      });
+
+      // Market data visualization
+      slideData.content.forEach((point, i) => {
+        const yPos = 1.5 + (i * 0.8);
+        // Data card
+        slide.addShape(pres.ShapeType.rect, {
+          x: 0.5,
+          y: yPos,
+          w: 4,
+          h: 0.6,
+          fill: { color: theme.light },
+          line: { color: theme.primary, width: 2 }
+        });
+
+        slide.addText(point, {
+          x: 0.8,
+          y: yPos + 0.2,
+          w: 3.4,
+          h: 0.3,
+          fontSize: 18,
+          color: theme.text
+        });
+      });
+
+    } else if (layout === 'competitive_landscape') {
+      // COMPETITIVE LANDSCAPE SLIDE
+      slide.background = { color: 'FFFFFF' };
+
+      // Header
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: 0.9,
+        fill: { color: theme.primary }
+      });
+
+      slide.addText(slideData.title, {
+        x: 0.6,
+        y: 0.2,
+        w: 8,
+        h: 0.5,
+        fontSize: 36,
+        bold: true,
+        color: 'FFFFFF'
+      });
+
+      // Competitive matrix
+      const competitors = slideData.content;
+      competitors.forEach((competitor, i) => {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const xPos = 0.5 + (col * 4.5);
+        const yPos = 1.5 + (row * 1);
+
+        slide.addShape(pres.ShapeType.rect, {
+          x: xPos,
+          y: yPos,
+          w: 4,
+          h: 0.8,
+          fill: { color: theme.light },
+          line: { color: theme.primary, width: 2 }
+        });
+
+        slide.addText(competitor, {
+          x: xPos + 0.2,
+          y: yPos + 0.2,
+          w: 3.6,
+          h: 0.5,
+          fontSize: 16,
+          color: theme.text
+        });
+      });
+
+    } else if (layout === 'financial_projection') {
+      // FINANCIAL PROJECTION SLIDE
+      slide.background = { color: 'FFFFFF' };
+
+      // Header with financial theme
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: 0.9,
+        fill: { color: theme.primary }
+      });
+
+      slide.addText(slideData.title, {
+        x: 0.6,
+        y: 0.2,
+        w: 8,
+        h: 0.5,
+        fontSize: 36,
+        bold: true,
+        color: 'FFFFFF'
+      });
+
+      // Financial metrics
+      slideData.content.forEach((point, i) => {
+        const yPos = 1.5 + (i * 0.7);
+        // Financial card
+        slide.addShape(pres.ShapeType.rect, {
+          x: 0.5,
+          y: yPos,
+          w: 9,
+          h: 0.6,
+          fill: { color: theme.light },
+          line: { color: theme.primary, width: 2 }
+        });
+
+        slide.addText(point, {
+          x: 0.8,
+          y: yPos + 0.2,
+          w: 8,
+          h: 0.3,
+          fontSize: 20,
+          bold: true,
+          color: theme.primary
+        });
+      });
+
+    } else if (layout === 'conclusion_call_to_action' || layout === 'conclusion' || layout === 'quote') {
+      // CONCLUSION & CALL TO ACTION SLIDE
+      slide.background = { color: theme.secondary };
+
+      // Large decorative element
+      slide.addShape(pres.ShapeType.ellipse, {
+        x: 6,
+        y: 1,
+        w: 6,
+        h: 6,
+        fill: { color: theme.accent, transparency: 40 }
+      });
+
+      slide.addText(slideData.title, {
+        x: 1,
+        y: 1.5,
+        w: 8,
+        h: 1.2,
+        fontSize: 56,
+        bold: true,
+        color: 'FFFFFF',
         align: 'center'
+      });
+
+      // Call to action points
+      slideData.content.forEach((point, i) => {
+        slide.addText(point, {
+          x: 1.5,
+          y: 3.5 + (i * 0.6),
+          w: 7,
+          h: 0.5,
+          fontSize: 24,
+          color: 'FFFFFF',
+          align: 'center'
+        });
       });
     }
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type StudioMode = 'chat' | 'image' | 'video' | 'music' | 'voice';
+export type StudioMode = 'chat' | 'image' | 'video' | 'music' | 'voice' | 'ppt' | 'code' | 'design';
 
 interface StudioModeContextType {
   mode: StudioMode;
@@ -17,6 +17,8 @@ export const StudioModeProvider: React.FC<{ children: ReactNode }> = ({ children
   const [mode, setMode] = useState<StudioMode>('chat');
   const [projectId, setProjectId] = useState<string | null>(null);
   const [isFullscreenGenerator, setIsFullscreenGenerator] = useState(false);
+
+  // Note: The initial mode will be set by UnifiedStudioChat based on currentView
 
   return (
     <StudioModeContext.Provider value={{ mode, setMode, projectId, setProjectId, isFullscreenGenerator, setIsFullscreenGenerator }}>

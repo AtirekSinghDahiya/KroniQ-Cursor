@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToProjects } from '../../lib/projectService';
+import { subscribeToProjects, createProject } from '../../lib/chatService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Code, Palette, Clock, Folder } from 'lucide-react';
-import { Project } from '../../types';
+import { Plus, Code, Palette, Clock, Folder, Image as ImageIcon, Video, Music, Mic, Presentation, MessageSquare } from 'lucide-react';
+import { Project } from '../../lib/supabaseClient';
 
 interface ProjectsViewProps {
   onOpenProject: (project: Project) => void;
@@ -14,7 +14,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
   const [loading, setLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectType, setNewProjectType] = useState<'code' | 'design'>('code');
+  const [newProjectType, setNewProjectType] = useState<'code' | 'design' | 'image' | 'video' | 'music' | 'voice' | 'ppt'>('code');
   const [newProjectDesc, setNewProjectDesc] = useState('');
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
       return;
     }
 
-    const unsubscribe = subscribeToProjects(currentUser.uid, (loadedProjects) => {
+    const unsubscribe = subscribeToProjects((loadedProjects) => {
       setProjects(loadedProjects.filter(p => p.status === 'active'));
       setLoading(false);
     });
@@ -31,25 +31,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
     return () => unsubscribe();
   }, [currentUser]);
 
-  const createProject = async () => {
+  const createProjectHandler = async () => {
     if (!currentUser || !newProjectName.trim()) return;
 
     try {
-      const projectData = {
-        user_id: currentUser.id,
-        name: newProjectName,
-        type: newProjectType,
-        description: newProjectDesc,
-        status: 'active'
-      };
-
-      const { error } = await supabase
-        .from('projects')
-        .insert(projectData);
-
-      if (error) throw error;
-
-      await loadProjects();
+      await createProject(newProjectName, newProjectType, newProjectDesc);
 
       setShowNewProject(false);
       setNewProjectName('');
@@ -134,6 +120,61 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
                       <Palette className="w-5 h-5" />
                       <span className="font-medium">Design</span>
                     </button>
+                    <button
+                      onClick={() => setNewProjectType('image')}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                        newProjectType === 'image'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                      <span className="font-medium">Image</span>
+                    </button>
+                    <button
+                      onClick={() => setNewProjectType('video')}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                        newProjectType === 'video'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Video className="w-5 h-5" />
+                      <span className="font-medium">Video</span>
+                    </button>
+                    <button
+                      onClick={() => setNewProjectType('music')}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                        newProjectType === 'music'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Music className="w-5 h-5" />
+                      <span className="font-medium">Music</span>
+                    </button>
+                    <button
+                      onClick={() => setNewProjectType('voice')}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                        newProjectType === 'voice'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Mic className="w-5 h-5" />
+                      <span className="font-medium">Voice</span>
+                    </button>
+                    <button
+                      onClick={() => setNewProjectType('ppt')}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                        newProjectType === 'ppt'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Presentation className="w-5 h-5" />
+                      <span className="font-medium">PPT</span>
+                    </button>
                   </div>
                 </div>
 
@@ -159,7 +200,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
                   Cancel
                 </button>
                 <button
-                  onClick={createProject}
+                  onClick={createProjectHandler}
                   disabled={!newProjectName.trim()}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -192,24 +233,17 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
                 className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-blue-300 group"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div
-                    className={`p-3 rounded-lg ${
-                      project.type === 'code' ? 'bg-blue-100' : 'bg-purple-100'
-                    }`}
-                  >
-                    {project.type === 'code' ? (
-                      <Code className="w-6 h-6 text-blue-600" />
-                    ) : (
-                      <Palette className="w-6 h-6 text-purple-600" />
-                    )}
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100">
+                    {project.type === 'code' && <Code className="w-6 h-6 text-blue-600" />}
+                    {project.type === 'design' && <Palette className="w-6 h-6 text-purple-600" />}
+                    {project.type === 'image' && <ImageIcon className="w-6 h-6 text-green-600" />}
+                    {project.type === 'video' && <Video className="w-6 h-6 text-red-600" />}
+                    {project.type === 'music' && <Music className="w-6 h-6 text-pink-600" />}
+                    {project.type === 'voice' && <Mic className="w-6 h-6 text-indigo-600" />}
+                    {project.type === 'ppt' && <Presentation className="w-6 h-6 text-orange-600" />}
+                    {project.type === 'chat' && <MessageSquare className="w-6 h-6 text-gray-600" />}
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      project.type === 'code'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
-                    }`}
-                  >
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
                     {project.type}
                   </span>
                 </div>

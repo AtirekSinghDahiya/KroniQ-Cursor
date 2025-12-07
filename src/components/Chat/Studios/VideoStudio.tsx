@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X, Video as VideoIcon, Loader, Download, Play, Sparkles,
-  Settings, ChevronDown, Plus, Wand2
+  X, Video as VideoIcon, Loader, Download, Sparkles,
+  ChevronDown, Plus, Wand2, History, Grid, Trash2
 } from 'lucide-react';
 import { generateVideo } from '../../../lib/videoService';
 import { useToast } from '../../../contexts/ToastContext';
@@ -10,18 +10,24 @@ import { saveVideoToProject } from '../../../lib/contentSaveService';
 import { executeGeneration, getGenerationLimitMessage } from '../../../lib/unifiedGenerationService';
 import { checkGenerationLimit } from '../../../lib/generationLimitsService';
 import { supabase } from '../../../lib/supabase';
+import { createStudioProject, updateProjectState, loadProject, generateStudioProjectName, getUserProjects, StudioProject } from '../../../lib/studioProjectService';
+import { useStudioMode } from '../../../contexts/StudioModeContext';
 
 interface VideoStudioProps {
   onClose: () => void;
   initialPrompt?: string;
+  projectId?: string;
 }
 
 export const VideoStudio: React.FC<VideoStudioProps> = ({
   onClose,
-  initialPrompt = ''
+  initialPrompt = '',
+  projectId: initialProjectId
 }) => {
+  console.log('🎬 VideoStudio component rendered with:', { initialPrompt, initialProjectId });
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { projectId: activeProjectId } = useStudioMode();
 
   const [prompt, setPrompt] = useState(initialPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,6 +35,8 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
   const [progress, setProgress] = useState('');
   const [tokenBalance, setTokenBalance] = useState(0);
   const [limitInfo, setLimitInfo] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(initialProjectId || activeProjectId || null);
+  const [historyProjects, setHistoryProjects] = useState<StudioProject[]>([]);
 
   // Settings
   const [selectedModel, setSelectedModel] = useState<'veo3_fast' | 'runway-gen3'>('veo3_fast');
@@ -40,6 +48,76 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
   useEffect(() => {
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    if (initialProjectId && user?.uid) {
+      loadExistingProject(initialProjectId);
+    }
+  }, [initialProjectId, user]);
+
+  const loadExistingProject = async (projectId: string) => {
+    try {
+      const result = await loadProject(projectId);
+      if (result.success && result.project) {
+        setCurrentProjectId(projectId);
+        const state = result.project.session_state || {};
+        setPrompt(state.prompt || '');
+        setGeneratedVideoUrl(state.generatedVideoUrl || null);
+        setSelectedModel(state.selectedModel || 'veo3_fast');
+        setAspectRatio(state.aspectRatio || '16:9');
+        setDuration(state.duration || 8);
+        setResolution(state.resolution || '720p');
+        console.log('✅ Loaded existing video project:', projectId);
+      }
+    } catch (error) {
+      console.error('Error loading video project:', error);
+    }
+  };
+
+  const saveProjectState = async (overrides: any = {}) => {
+    if (!user?.uid) return null;
+
+    const sessionState = {
+      prompt,
+      generatedVideoUrl,
+      selectedModel,
+      aspectRatio,
+      duration,
+      resolution,
+      ...overrides
+    };
+
+    try {
+      if (currentProjectId) {
+        await updateProjectState({
+          projectId: currentProjectId,
+          sessionState
+        });
+        console.log('✅ Video project state updated');
+        return currentProjectId;
+      } else {
+        const projectName = generateStudioProjectName('video', prompt);
+        const result = await createStudioProject({
+          userId: user.uid,
+          studioType: 'video',
+          name: projectName,
+          description: prompt,
+          model: selectedModel,
+          sessionState
+        });
+
+        if (result.success && result.projectId) {
+          setCurrentProjectId(result.projectId);
+          console.log('✅ New video project created:', result.projectId);
+          showToast('success', 'Project Saved', 'Your video project has been saved');
+          return result.projectId;
+        }
+      }
+    } catch (error) {
+      console.error('Error saving video project:', error);
+    }
+    return null;
+  };
 
   const loadData = async () => {
     if (!user?.uid) return;
@@ -58,6 +136,12 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
     // Load generation limit info
     const limit = await checkGenerationLimit(user.uid, 'video');
     setLimitInfo(getGenerationLimitMessage('video', limit.isPaid, limit.current, limit.limit));
+
+    // Load recent projects
+    const projectsResult = await getUserProjects(user.uid, 'video');
+    if (projectsResult.success && projectsResult.projects) {
+      setHistoryProjects(projectsResult.projects);
+    }
   };
 
   const handleGenerate = async () => {
@@ -107,6 +191,12 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
         provider: 'kie-ai'
       });
 
+      // Save Project State
+      setGeneratedVideoUrl(result.data);
+
+      // Save or create project using the helper
+      await saveProjectState({ generatedVideoUrl: result.data });
+
       showToast('success', 'Video Generated!', 'Your video is ready');
       await loadData();
     } else if (result.limitReached) {
@@ -132,6 +222,78 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
   return (
     <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
       {/* Main Content */}
+      {/* Projects Sidebar */}
+      <div className="hidden lg:flex lg:w-80 border-r border-white/10 flex-col bg-black h-full">
+        <div className="p-4 border-b border-white/10">
+          <h2 className="font-semibold text-white mb-2">Recent Projects</h2>
+          <button
+            onClick={() => {
+              setPrompt('');
+              setGeneratedVideoUrl(null);
+              setCurrentProjectId(null);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all"
+          >
+            <Plus className="w-4 h-4" /> New Project
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {/* Project list will be populated here by fetching from Supabase */}
+          <div className="text-center text-white/40 text-sm py-4">
+            Projects load from sidebar
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Sidebar */}
+      <div className="hidden lg:flex lg:w-80 border-r border-white/10 flex-col bg-black h-full">
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-4">
+            <History className="w-5 h-5 text-white/60" />
+            <h2 className="font-semibold text-white">Recent Projects</h2>
+          </div>
+          <button
+            onClick={() => {
+              setPrompt('');
+              setGeneratedVideoUrl(null);
+              setCurrentProjectId(null);
+              setGeneratedVideoUrl(null);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-white/90 text-black font-medium rounded-lg transition-all"
+          >
+            <Plus className="w-4 h-4" /> New Project
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {historyProjects.length === 0 ? (
+            <div className="text-center py-8 text-white/40 text-sm">
+              <Grid className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              No projects yet
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {historyProjects.map(proj => (
+                <div
+                  key={proj.id}
+                  onClick={() => loadExistingProject(proj.id)}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${currentProjectId === proj.id
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                >
+                  <div className="font-medium text-sm text-white truncate mb-1">
+                    {proj.name.replace('Video: ', '')}
+                  </div>
+                  <div className="text-xs text-white/50">
+                    {new Date(proj.updated_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar - Black & White Only */}
         <div className="relative border-b border-white/10 bg-black overflow-hidden">
@@ -145,7 +307,7 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-xl sm:text-2xl font-bold text-white">
-                    Video Generation Studio
+                    🎬 NEW Video Studio
                   </h1>
                   <span className="hidden sm:inline-flex px-2.5 py-1 text-xs font-semibold bg-white/10 text-white border border-white/20 rounded-full">
                     AI Powered
@@ -170,7 +332,7 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
               {/* Mobile token display */}
               <div className="sm:hidden flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
                 <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance/1000)}k` : tokenBalance}</span>
+                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance / 1000)}k` : tokenBalance}</span>
               </div>
 
               <button
@@ -190,83 +352,83 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
           <div className="flex-1 flex flex-col bg-black relative overflow-hidden">
             {/* Video Display Area */}
             <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-auto">
-            {isGenerating ? (
-              <div className="flex flex-col items-center gap-6">
-                <div className="relative">
-                  <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
+              {isGenerating ? (
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative">
+                    <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="text-center px-4">
+                    <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your video...</p>
+                    <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
                   </div>
                 </div>
-                <div className="text-center px-4">
-                  <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your video...</p>
-                  <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
-                </div>
-              </div>
-            ) : generatedVideoUrl ? (
-              <div className="max-w-5xl w-full">
-                <div className="relative rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl mb-4">
-                  <video
-                    src={generatedVideoUrl}
-                    controls
-                    autoPlay
-                    loop
-                    className="w-full h-auto"
-                  />
-                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
-                    <button
-                      onClick={() => handleDownload(generatedVideoUrl)}
-                      className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-sm text-white/70 line-clamp-2">{prompt}</p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-white/50">
-                    <span>Model: {selectedModel.toUpperCase()}</span>
-                    <span>•</span>
-                    <span>{aspectRatio}</span>
-                    <span>•</span>
-                    <span>{duration}s</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center max-w-2xl px-4">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
-                  <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Video</h3>
-                <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
-                  Describe your video in the prompt below. Be detailed for best results - include action, scene, mood, and camera movements.
-                </p>
-                <div className="space-y-4">
-                  <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      'A person dancing in a golden field at sunset',
-                      'Cinematic drone shot flying through a futuristic city',
-                      'Ocean waves crashing on a beach in slow motion',
-                      'Time-lapse of clouds moving over mountains'
-                    ].map((example) => (
+              ) : generatedVideoUrl ? (
+                <div className="max-w-5xl w-full">
+                  <div className="relative rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl mb-4">
+                    <video
+                      src={generatedVideoUrl}
+                      controls
+                      autoPlay
+                      loop
+                      className="w-full h-auto"
+                    />
+                    <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
                       <button
-                        key={example}
-                        onClick={() => setPrompt(example)}
-                        className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                        onClick={() => handleDownload(generatedVideoUrl)}
+                        className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
+                        title="Download"
                       >
-                        <span className="text-white mr-2">→</span>
-                        {example}
+                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
-                    ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <p className="text-sm text-white/70 line-clamp-2">{prompt}</p>
+                    <div className="flex items-center gap-4 mt-3 text-xs text-white/50">
+                      <span>Model: {selectedModel.toUpperCase()}</span>
+                      <span>•</span>
+                      <span>{aspectRatio}</span>
+                      <span>•</span>
+                      <span>{duration}s</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center max-w-2xl px-4">
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
+                    <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Video</h3>
+                  <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
+                    Describe your video in the prompt below. Be detailed for best results - include action, scene, mood, and camera movements.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        'A person dancing in a golden field at sunset',
+                        'Cinematic drone shot flying through a futuristic city',
+                        'Ocean waves crashing on a beach in slow motion',
+                        'Time-lapse of clouds moving over mountains'
+                      ].map((example) => (
+                        <button
+                          key={example}
+                          onClick={() => setPrompt(example)}
+                          className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                        >
+                          <span className="text-white mr-2">→</span>
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Prompt Input Area */}
@@ -327,17 +489,15 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
                   <button
                     key={model.id}
                     onClick={() => setSelectedModel(model.id as any)}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
-                      selectedModel === model.id
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`w-full p-3 rounded-lg border transition-all text-left ${selectedModel === model.id
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-white text-sm">{model.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        model.badge === 'Fast' ? 'bg-white/10 text-white' : 'bg-white/10 text-white'
-                      }`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${model.badge === 'Fast' ? 'bg-white/10 text-white' : 'bg-white/10 text-white'
+                        }`}>
                         {model.badge}
                       </span>
                     </div>
@@ -358,11 +518,10 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
                   <button
                     key={ratio.id}
                     onClick={() => setAspectRatio(ratio.id as any)}
-                    className={`p-3 rounded-lg border transition-all ${
-                      aspectRatio === ratio.id
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`p-3 rounded-lg border transition-all ${aspectRatio === ratio.id
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="text-2xl mb-1">{ratio.icon}</div>
                     <div className="text-xs font-medium text-white">{ratio.label}</div>
@@ -380,11 +539,10 @@ export const VideoStudio: React.FC<VideoStudioProps> = ({
                   <button
                     key={dur}
                     onClick={() => setDuration(dur as any)}
-                    className={`p-3 rounded-lg border transition-all ${
-                      duration === dur
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`p-3 rounded-lg border transition-all ${duration === dur
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="text-sm font-medium text-white">{dur}s</div>
                   </button>

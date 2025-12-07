@@ -24,7 +24,7 @@ export interface Project {
   id: string;
   user_id: string;
   name: string;
-  type: 'chat' | 'code' | 'design' | 'video';
+  type: 'chat' | 'code' | 'design' | 'video' | 'image' | 'music' | 'voice' | 'ppt';
   description?: string;
   ai_model?: string;
   status?: string;

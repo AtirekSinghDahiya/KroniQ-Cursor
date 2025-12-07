@@ -12,7 +12,7 @@ import { getOpenRouterResponse, getOpenRouterResponseWithUsage } from '../../lib
 import { classifyIntent, shouldShowConfirmation, shouldAutoRoute } from '../../lib/intentClassifier';
 import { ChatSidebar } from './ChatSidebar';
 import { LandingView } from './LandingView';
-import { MobileLandingView} from './MobileLandingView';
+import { MobileLandingView } from './MobileLandingView';
 import { StudioLandingView } from './StudioLandingView';
 import { IntentDialog } from './IntentDialog';
 import { MessageSearchBar } from './MessageSearchBar';
@@ -20,7 +20,7 @@ import { GroupedModelSelector } from './GroupedModelSelector';
 import { ProfileButton } from '../Common/ProfileButton';
 import { CompactModelSelector } from './CompactModelSelector';
 import { ChatInput } from './ChatInput';
-import { SimpleVideoGenerator } from './SimpleVideoGenerator';
+import { VideoStudio } from './Studios/VideoStudio';
 import { VoiceStudio } from './Studios/VoiceStudio';
 import { MusicStudio } from './Studios/MusicStudio';
 import { TTSStudio } from './Studios/TTSStudio';
@@ -407,11 +407,11 @@ export const MainChat: React.FC = () => {
         // Add generating message
         const generatingMsg = await addMessage(projectId, 'assistant', '🎵 Generating music... This may take 1-2 minutes.', []);
 
-        // Generate music
-        const { sunoService } = await import('../../lib/sunoService');
-        const result = await sunoService.generateMusic({
+        // Generate music using Kie AI
+        const { generateMusic } = await import('../../lib/musicService');
+        const result = await generateMusic({
           prompt: finalPrompt,
-          makeInstrumental: false
+          duration: 60
         });
 
         if (result && result.songs && result.songs.length > 0) {
@@ -1038,26 +1038,30 @@ export const MainChat: React.FC = () => {
                 setImagePrompt('');
               }}
               initialPrompt={imagePrompt}
+              projectId={activeProjectId || undefined}
             />
           ) : showVideoGenerator ? (
-            <SimpleVideoGenerator
+            <VideoStudio
               onClose={() => {
                 setShowVideoGenerator(false);
                 setVideoPrompt('');
               }}
               initialPrompt={videoPrompt}
+              projectId={activeProjectId || undefined}
             />
           ) : showMusicStudio ? (
             <MusicStudio
               onClose={() => {
                 setShowMusicStudio(false);
               }}
+              projectId={activeProjectId || undefined}
             />
           ) : showVoiceStudio ? (
             <VoiceStudio
               onClose={() => {
                 setShowVoiceStudio(false);
               }}
+              projectId={activeProjectId || undefined}
             />
           ) : showTTSStudio ? (
             <TTSStudio
@@ -1066,6 +1070,7 @@ export const MainChat: React.FC = () => {
                 setVoiceoverText('');
               }}
               initialText={voiceoverText}
+              projectId={activeProjectId || undefined}
             />
           ) : showPPTGenerator ? (
             <PPTStudio
@@ -1074,6 +1079,7 @@ export const MainChat: React.FC = () => {
                 setPPTTopic('');
               }}
               initialTopic={pptTopic}
+              projectId={activeProjectId || undefined}
             />
           ) : showLanding ? (
             <div className="h-full">
@@ -1152,351 +1158,347 @@ export const MainChat: React.FC = () => {
             </div>
           ) : (
             <div className="px-2 md:px-4">
-            <>
-              {/* Messages Area */}
-              <div className="py-8 space-y-6 pb-32">
-              {messages.map((message, index) => (
-                <div
-                  key={message.id}
-                  className={`group flex gap-3 ${
-                    message.role === 'user'
-                      ? 'justify-end max-w-5xl ml-auto mr-4'
-                      : 'justify-start max-w-5xl ml-0 md:ml-4 mr-auto'
-                  }`}
-                >
-                  {/* Avatar - Left for AI, Right for User */}
-                  {message.role === 'assistant' && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
-                      <img src="/Black_Blue_White_Modern_Simple_Minimal_Gradient_Circle__Neon_Technology__AI_Logo__1_-removebg-preview copy.png" alt="KroniQ" className="w-8 h-8" />
-                    </div>
-                  )}
+              <>
+                {/* Messages Area */}
+                <div className="py-8 space-y-6 pb-32">
+                  {messages.map((message, index) => (
+                    <div
+                      key={message.id}
+                      className={`group flex gap-3 ${message.role === 'user'
+                        ? 'justify-end max-w-5xl ml-auto mr-4'
+                        : 'justify-start max-w-5xl ml-0 md:ml-4 mr-auto'
+                        }`}
+                    >
+                      {/* Avatar - Left for AI, Right for User */}
+                      {message.role === 'assistant' && (
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
+                          <img src="/Black_Blue_White_Modern_Simple_Minimal_Gradient_Circle__Neon_Technology__AI_Logo__1_-removebg-preview copy.png" alt="KroniQ" className="w-8 h-8" />
+                        </div>
+                      )}
 
-                  {/* Message Bubble */}
-                  <div className={`flex flex-col ${message.role === 'user' ? 'max-w-[75%] items-end' : 'max-w-[85%] items-start'}`}>
-                    <div className={`rounded-2xl px-4 py-3 ${
-                      message.role === 'user'
-                        ? theme === 'light'
-                          ? 'bg-gray-100 text-gray-900 rounded-br-md'
-                          : 'bg-gray-800/50 text-gray-100 rounded-br-md'
-                        : theme === 'light'
-                        ? 'bg-gray-100 text-gray-900 rounded-bl-md'
-                        : 'bg-gray-800/50 text-gray-100 rounded-bl-md'
-                    } backdrop-blur-sm shadow-lg`}>
-                      {/* Render message content */}
-                      {message.content && (
-                        message.role === 'assistant' ? (
-                          // Assistant messages with markdown support
-                          message.content.includes('#') || message.content.includes('**') || message.content.includes('```') || message.content.includes('|') ? (
-                            <div className="text-[15px] leading-[1.6]">
-                              {typingMessageId === message.id ? (
-                                <TypingEffect
-                                  text={message.content}
-                                  speed={5}
-                                  onComplete={() => setTypingMessageId(null)}
-                                />
+                      {/* Message Bubble */}
+                      <div className={`flex flex-col ${message.role === 'user' ? 'max-w-[75%] items-end' : 'max-w-[85%] items-start'}`}>
+                        <div className={`rounded-2xl px-4 py-3 ${message.role === 'user'
+                          ? theme === 'light'
+                            ? 'bg-gray-100 text-gray-900 rounded-br-md'
+                            : 'bg-gray-800/50 text-gray-100 rounded-br-md'
+                          : theme === 'light'
+                            ? 'bg-gray-100 text-gray-900 rounded-bl-md'
+                            : 'bg-gray-800/50 text-gray-100 rounded-bl-md'
+                          } backdrop-blur-sm shadow-lg`}>
+                          {/* Render message content */}
+                          {message.content && (
+                            message.role === 'assistant' ? (
+                              // Assistant messages with markdown support
+                              message.content.includes('#') || message.content.includes('**') || message.content.includes('```') || message.content.includes('|') ? (
+                                <div className="text-[15px] leading-[1.6]">
+                                  {typingMessageId === message.id ? (
+                                    <TypingEffect
+                                      text={message.content}
+                                      speed={5}
+                                      onComplete={() => setTypingMessageId(null)}
+                                    />
+                                  ) : (
+                                    <MarkdownRenderer content={message.content} />
+                                  )}
+                                </div>
                               ) : (
-                                <MarkdownRenderer content={message.content} />
-                              )}
+                                <div className="text-[15px] leading-[1.6] whitespace-pre-wrap font-normal">
+                                  {typingMessageId === message.id ? (
+                                    <TypingEffect
+                                      text={message.content}
+                                      speed={5}
+                                      onComplete={() => setTypingMessageId(null)}
+                                    />
+                                  ) : (
+                                    message.content
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              // User messages - simple text display
+                              <div className="text-[15px] leading-[1.6] whitespace-pre-wrap font-normal">
+                                {message.content}
+                              </div>
+                            )
+                          )}
+
+                          {/* Display Generated Media (images, videos, audio) */}
+                          {(message as any).payload?.generatedContent && (() => {
+                            const generatedContent = (message as any).payload.generatedContent;
+                            if (generatedContent.url) {
+                              return (
+                                <MediaPreview
+                                  type={generatedContent.type || 'image'}
+                                  url={generatedContent.url}
+                                  prompt={generatedContent.prompt || message.content}
+                                  metadata={generatedContent.metadata}
+                                />
+                              );
+                            }
+                            return null;
+                          })()}
+
+                          {/* Display Attachments */}
+                          {message.file_attachments && (() => {
+                            try {
+                              // Handle both stringified and direct array
+                              const attachments = typeof message.file_attachments === 'string'
+                                ? JSON.parse(message.file_attachments)
+                                : message.file_attachments;
+
+                              if (Array.isArray(attachments) && attachments.length > 0) {
+                                return (
+                                  <div className="mt-3 space-y-2">
+                                    {attachments.map((attachment: any, idx: number) => (
+                                      <div key={idx}>
+                                        {attachment.type === 'image' || attachment.type?.startsWith('image/') ? (
+                                          <div className="relative group">
+                                            <img
+                                              src={attachment.url}
+                                              alt={attachment.name || 'Attached image'}
+                                              className="rounded-lg max-w-full h-auto"
+                                            />
+                                            <button
+                                              onClick={async () => {
+                                                try {
+                                                  const response = await fetch(attachment.url);
+                                                  const blob = await response.blob();
+                                                  const url = window.URL.createObjectURL(blob);
+                                                  const a = document.createElement('a');
+                                                  a.href = url;
+                                                  a.download = attachment.name || `image-${Date.now()}.png`;
+                                                  document.body.appendChild(a);
+                                                  a.click();
+                                                  window.URL.revokeObjectURL(url);
+                                                  document.body.removeChild(a);
+                                                } catch (error) {
+                                                  console.error('Download failed:', error);
+                                                }
+                                              }}
+                                              className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+                                              title="Download image"
+                                            >
+                                              <Download className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        ) : attachment.type?.startsWith('audio/') ? (
+                                          <div className="mt-2">
+                                            <audio controls className="w-full max-w-md">
+                                              <source src={attachment.url} type={attachment.type} />
+                                              Your browser does not support the audio element.
+                                            </audio>
+                                            <div className="flex items-center justify-between mt-2">
+                                              <p className="text-xs opacity-70">🎵 {attachment.name || 'Audio file'}</p>
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    const response = await fetch(attachment.url);
+                                                    const blob = await response.blob();
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = attachment.name || `audio-${Date.now()}.mp3`;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    window.URL.revokeObjectURL(url);
+                                                    document.body.removeChild(a);
+                                                  } catch (error) {
+                                                    console.error('Download failed:', error);
+                                                  }
+                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[#00FFF0]/10 hover:bg-[#00FFF0]/20 text-[#00FFF0] border border-[#00FFF0]/30 transition-all"
+                                              >
+                                                <Download className="w-3 h-3" />
+                                                Download
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : attachment.type?.startsWith('video/') ? (
+                                          <div className="mt-2">
+                                            <video controls className="w-full max-w-2xl rounded-lg">
+                                              <source src={attachment.url} type={attachment.type} />
+                                              Your browser does not support the video element.
+                                            </video>
+                                            <div className="flex items-center justify-between mt-2">
+                                              <p className="text-xs opacity-70">🎬 {attachment.name || 'Video file'}</p>
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    const response = await fetch(attachment.url);
+                                                    const blob = await response.blob();
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = attachment.name || `video-${Date.now()}.mp4`;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    window.URL.revokeObjectURL(url);
+                                                    document.body.removeChild(a);
+                                                  } catch (error) {
+                                                    console.error('Download failed:', error);
+                                                  }
+                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[#00FFF0]/10 hover:bg-[#00FFF0]/20 text-[#00FFF0] border border-[#00FFF0]/30 transition-all"
+                                              >
+                                                <Download className="w-3 h-3" />
+                                                Download
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <a
+                                            href={attachment.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 dark:hover:bg-white/20 transition-colors"
+                                          >
+                                            <span>📎 {attachment.name || 'File'}</span>
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                            } catch (e) {
+                              console.error('Error parsing attachments:', e);
+                            }
+                            return null;
+                          })()}
+                        </div>
+
+                        {/* Action Buttons - Only for AI messages */}
+                        {message.role === 'assistant' && (
+                          <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(message.content);
+                                showToast('Copied to clipboard!', 'success');
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="Copy"
+                            >
+                              <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                showToast('Thanks for your feedback!', 'success');
+                                console.log('Good response feedback');
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="Good response"
+                            >
+                              <ThumbsUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                showToast('Thanks for your feedback!', 'success');
+                                console.log('Bad response feedback');
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="Bad response"
+                            >
+                              <ThumbsDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const shareText = `Check out this AI response:\n\n${message.content.substring(0, 200)}...`;
+                                if (navigator.share) {
+                                  navigator.share({
+                                    title: 'KroniQ AI Response',
+                                    text: shareText,
+                                  }).catch(() => { });
+                                } else {
+                                  navigator.clipboard.writeText(shareText);
+                                  showToast('Response copied for sharing!', 'success');
+                                }
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="Share"
+                            >
+                              <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Find the user message that prompted this response
+                                const userMessage = messages[index - 1];
+                                if (userMessage && userMessage.role === 'user') {
+                                  handleSendMessage(userMessage.content);
+                                }
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="Retry"
+                            >
+                              <RotateCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Placeholder for more actions
+                                console.log('More actions');
+                              }}
+                              className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                              title="More actions"
+                            >
+                              <MoreHorizontal className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Avatar - Right for User */}
+                      {message.role === 'user' && (
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {(isLoading || isThinking) && (
+                    <div className="flex gap-3 justify-start">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
+                        <img src="/Black_Blue_White_Modern_Simple_Minimal_Gradient_Circle__Neon_Technology__AI_Logo__1_-removebg-preview copy.png" alt="KroniQ" className="w-8 h-8 animate-pulse" />
+                      </div>
+                      <div className={`rounded-2xl rounded-bl-md px-4 py-3 ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-800/50'
+                        } backdrop-blur-sm shadow-lg`}>
+                        <div className="flex flex-col gap-2">
+                          {isThinking ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                              </div>
+                              <span className="text-sm text-white/80">{thinkingText}</span>
                             </div>
                           ) : (
-                            <div className="text-[15px] leading-[1.6] whitespace-pre-wrap font-normal">
-                              {typingMessageId === message.id ? (
-                                <TypingEffect
-                                  text={message.content}
-                                  speed={5}
-                                  onComplete={() => setTypingMessageId(null)}
-                                />
-                              ) : (
-                                message.content
-                              )}
+                            <div className="flex items-center space-x-1">
+                              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                             </div>
-                          )
-                        ) : (
-                          // User messages - simple text display
-                          <div className="text-[15px] leading-[1.6] whitespace-pre-wrap font-normal">
-                            {message.content}
-                          </div>
-                        )
-                      )}
-
-                      {/* Display Generated Media (images, videos, audio) */}
-                      {(message as any).payload?.generatedContent && (() => {
-                        const generatedContent = (message as any).payload.generatedContent;
-                        if (generatedContent.url) {
-                          return (
-                            <MediaPreview
-                              type={generatedContent.type || 'image'}
-                              url={generatedContent.url}
-                              prompt={generatedContent.prompt || message.content}
-                              metadata={generatedContent.metadata}
-                            />
-                          );
-                        }
-                        return null;
-                      })()}
-
-                      {/* Display Attachments */}
-                      {message.file_attachments && (() => {
-                        try {
-                          // Handle both stringified and direct array
-                          const attachments = typeof message.file_attachments === 'string'
-                            ? JSON.parse(message.file_attachments)
-                            : message.file_attachments;
-
-                          if (Array.isArray(attachments) && attachments.length > 0) {
-                            return (
-                              <div className="mt-3 space-y-2">
-                                {attachments.map((attachment: any, idx: number) => (
-                                  <div key={idx}>
-                                    {attachment.type === 'image' || attachment.type?.startsWith('image/') ? (
-                                      <div className="relative group">
-                                        <img
-                                          src={attachment.url}
-                                          alt={attachment.name || 'Attached image'}
-                                          className="rounded-lg max-w-full h-auto"
-                                        />
-                                        <button
-                                          onClick={async () => {
-                                            try {
-                                              const response = await fetch(attachment.url);
-                                              const blob = await response.blob();
-                                              const url = window.URL.createObjectURL(blob);
-                                              const a = document.createElement('a');
-                                              a.href = url;
-                                              a.download = attachment.name || `image-${Date.now()}.png`;
-                                              document.body.appendChild(a);
-                                              a.click();
-                                              window.URL.revokeObjectURL(url);
-                                              document.body.removeChild(a);
-                                            } catch (error) {
-                                              console.error('Download failed:', error);
-                                            }
-                                          }}
-                                          className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
-                                          title="Download image"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    ) : attachment.type?.startsWith('audio/') ? (
-                                      <div className="mt-2">
-                                        <audio controls className="w-full max-w-md">
-                                          <source src={attachment.url} type={attachment.type} />
-                                          Your browser does not support the audio element.
-                                        </audio>
-                                        <div className="flex items-center justify-between mt-2">
-                                          <p className="text-xs opacity-70">🎵 {attachment.name || 'Audio file'}</p>
-                                          <button
-                                            onClick={async () => {
-                                              try {
-                                                const response = await fetch(attachment.url);
-                                                const blob = await response.blob();
-                                                const url = window.URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = attachment.name || `audio-${Date.now()}.mp3`;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                window.URL.revokeObjectURL(url);
-                                                document.body.removeChild(a);
-                                              } catch (error) {
-                                                console.error('Download failed:', error);
-                                              }
-                                            }}
-                                            className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[#00FFF0]/10 hover:bg-[#00FFF0]/20 text-[#00FFF0] border border-[#00FFF0]/30 transition-all"
-                                          >
-                                            <Download className="w-3 h-3" />
-                                            Download
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : attachment.type?.startsWith('video/') ? (
-                                      <div className="mt-2">
-                                        <video controls className="w-full max-w-2xl rounded-lg">
-                                          <source src={attachment.url} type={attachment.type} />
-                                          Your browser does not support the video element.
-                                        </video>
-                                        <div className="flex items-center justify-between mt-2">
-                                          <p className="text-xs opacity-70">🎬 {attachment.name || 'Video file'}</p>
-                                          <button
-                                            onClick={async () => {
-                                              try {
-                                                const response = await fetch(attachment.url);
-                                                const blob = await response.blob();
-                                                const url = window.URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = attachment.name || `video-${Date.now()}.mp4`;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                window.URL.revokeObjectURL(url);
-                                                document.body.removeChild(a);
-                                              } catch (error) {
-                                                console.error('Download failed:', error);
-                                              }
-                                            }}
-                                            className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[#00FFF0]/10 hover:bg-[#00FFF0]/20 text-[#00FFF0] border border-[#00FFF0]/30 transition-all"
-                                          >
-                                            <Download className="w-3 h-3" />
-                                            Download
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <a
-                                        href={attachment.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 dark:hover:bg-white/20 transition-colors"
-                                      >
-                                        <span>📎 {attachment.name || 'File'}</span>
-                                      </a>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }
-                        } catch (e) {
-                          console.error('Error parsing attachments:', e);
-                        }
-                        return null;
-                      })()}
-                    </div>
-
-                    {/* Action Buttons - Only for AI messages */}
-                    {message.role === 'assistant' && (
-                      <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(message.content);
-                            showToast('Copied to clipboard!', 'success');
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="Copy"
-                        >
-                          <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            showToast('Thanks for your feedback!', 'success');
-                            console.log('Good response feedback');
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="Good response"
-                        >
-                          <ThumbsUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            showToast('Thanks for your feedback!', 'success');
-                            console.log('Bad response feedback');
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="Bad response"
-                        >
-                          <ThumbsDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const shareText = `Check out this AI response:\n\n${message.content.substring(0, 200)}...`;
-                            if (navigator.share) {
-                              navigator.share({
-                                title: 'KroniQ AI Response',
-                                text: shareText,
-                              }).catch(() => {});
-                            } else {
-                              navigator.clipboard.writeText(shareText);
-                              showToast('Response copied for sharing!', 'success');
-                            }
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="Share"
-                        >
-                          <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            // Find the user message that prompted this response
-                            const userMessage = messages[index - 1];
-                            if (userMessage && userMessage.role === 'user') {
-                              handleSendMessage(userMessage.content);
-                            }
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="Retry"
-                        >
-                          <RotateCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            // Placeholder for more actions
-                            console.log('More actions');
-                          }}
-                          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                          title="More actions"
-                        >
-                          <MoreHorizontal className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Avatar - Right for User */}
-                  {message.role === 'user' && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
                     </div>
                   )}
-                </div>
-              ))}
 
-              {(isLoading || isThinking) && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
-                    <img src="/Black_Blue_White_Modern_Simple_Minimal_Gradient_Circle__Neon_Technology__AI_Logo__1_-removebg-preview copy.png" alt="KroniQ" className="w-8 h-8 animate-pulse" />
-                  </div>
-                  <div className={`rounded-2xl rounded-bl-md px-4 py-3 ${
-                    theme === 'light' ? 'bg-gray-100' : 'bg-gray-800/50'
-                  } backdrop-blur-sm shadow-lg`}>
-                    <div className="flex flex-col gap-2">
-                      {isThinking ? (
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-[#00FFF0] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                          </div>
-                          <span className="text-sm text-white/80">{thinkingText}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <div ref={messagesEndRef} />
                 </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-            </>
+              </>
             </div>
           )}
         </div>
 
         {/* Input Area - Full Width */}
         {!showLanding && (
-          <div className={`border-t p-6 ${
-            theme === 'light'
-              ? 'border-gray-200 bg-transparent'
-              : 'border-white/10 bg-transparent'
-          }`}>
+          <div className={`border-t p-6 ${theme === 'light'
+            ? 'border-gray-200 bg-transparent'
+            : 'border-white/10 bg-transparent'
+            }`}>
             <div className="max-w-4xl mx-auto">
               {/* Stop Button - Show when generating */}
               {isLoading && (

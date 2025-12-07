@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if profile exists and has tokens
       const { data: profile } = await supabase
         .from('profiles')
-        .select('tokens_balance, free_tokens_balance, paid_tokens_balance, current_tier')
+        .select('tokens_balance, free_tokens_balance, paid_tokens_balance, current_tier, created_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -97,6 +97,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           paid: profile.paid_tokens_balance,
           tier: profile.current_tier
         });
+
+        // "Second Chance" Logic: If user has exactly 150k (default) and was created recently, try to give the bonus
+        // This fixes the issue where the initial creation hook might have missed the promo
+        if (profile.tokens_balance <= 150000 && profile.current_tier === 'free') {
+          console.log('🎁 Checking for missed "FIRST100" 5M token bonus...');
+
+          // We'll delay slightly to ensure we don't race with the initial trigger if this is a fresh signup
+          setTimeout(async () => {
+            try {
+              const hasRedeemed = await PromoService.hasUserRedeemedCampaign(userId, 'FIRST100');
+              if (!hasRedeemed) {
+                console.log('⚠️ User missed FIRST100 bonus on signup. Attempting to redeem now...');
+                const campaignStatus = await PromoService.checkCampaignStatus('FIRST100');
+
+                if (campaignStatus.isValid && campaignStatus.remainingSlots > 0) {
+                  const redemption = await PromoService.redeemPromoCode(userId, 'FIRST100');
+                  if (redemption.success) {
+                    console.log(`🎉 REQUIRED FIX: Awarded ${redemption.tokensAwarded.toLocaleString()} tokens via Second Chance!`);
+                    // Force refresh user data to update UI
+                    await refreshUserData();
+                  } else {
+                    console.error('❌ Failed Second Chance redemption:', redemption.message);
+                  }
+                } else {
+                  console.log('ℹ️ FIRST100 Campaign unavailable for Second Chance:', campaignStatus.message);
+                }
+              } else {
+                console.log('✅ User already redeemed FIRST100.');
+              }
+            } catch (err) {
+              console.error('❌ Error in Second Chance logic:', err);
+            }
+          }, 3000);
+        }
       }
     } catch (error) {
       console.error('Error checking token balance:', error);

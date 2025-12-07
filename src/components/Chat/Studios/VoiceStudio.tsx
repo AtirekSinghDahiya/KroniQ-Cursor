@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Mic, X, Loader, Download, Play, Pause, Sparkles, Upload,
-  Wand2, Volume2, Settings, History, FileAudio, Search
+  Wand2, Volume2, Settings, History, FileAudio
 } from 'lucide-react';
 import { generateWithElevenLabs, ELEVENLABS_VOICES } from '../../../lib/elevenlabsTTSService';
-import { generateWithGeminiTTS, GEMINI_VOICES } from '../../../lib/geminiTTSService';
+import { generateWithGeminiTTS } from '../../../lib/geminiTTSService';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { createProject, addMessage } from '../../../lib/chatService';
+import { addMessage } from '../../../lib/chatService';
 import { deductTokensForRequest } from '../../../lib/tokenService';
 import { getModelCost } from '../../../lib/modelTokenPricing';
 import { supabase } from '../../../lib/supabase';
@@ -113,7 +113,6 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
   const [tokenBalance, setTokenBalance] = useState(0);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [soundSearch, setSoundSearch] = useState('');
-  const [selectedSoundEffect, setSelectedSoundEffect] = useState<string>('');
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -225,16 +224,15 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
     setProgress('Initializing...');
 
     try {
-      let projectId = activeProjectId;
+      let projectId = currentProjectId;
 
       if (!projectId) {
-        setProgress('Creating voice project...');
-        const newProject = await createProject(
-          `Voice: ${text.substring(0, 30) || 'Audio Generation'}`,
-          'voice',
-          text || 'Voice generation project'
-        );
-        projectId = newProject.id;
+        projectId = await saveProjectState();
+        if (projectId) {
+          setCurrentProjectId(projectId);
+        } else {
+          throw new Error('Failed to create project');
+        }
       }
 
       await addMessage(projectId, 'user', text || 'Voice generation request');
@@ -668,17 +666,15 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
             <div className="flex items-center gap-6">
               <button
                 onClick={() => setShowHistory(false)}
-                className={`px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
-                  !showHistory ? 'border-white text-white' : 'border-transparent text-white/50 hover:text-white'
-                }`}
+                className={`px-4 py-3 border-b-2 text-sm font-medium transition-colors ${!showHistory ? 'border-white text-white' : 'border-transparent text-white/50 hover:text-white'
+                  }`}
               >
                 Settings
               </button>
               <button
                 onClick={() => setShowHistory(true)}
-                className={`px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
-                  showHistory ? 'border-white text-white' : 'border-transparent text-white/50 hover:text-white'
-                }`}
+                className={`px-4 py-3 border-b-2 text-sm font-medium transition-colors ${showHistory ? 'border-white text-white' : 'border-transparent text-white/50 hover:text-white'
+                  }`}
               >
                 History
               </button>
@@ -692,17 +688,15 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
                 <div className="flex gap-2 p-1 bg-white/5 rounded-lg">
                   <button
                     onClick={() => setActiveTab('tts')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'tts' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
-                    }`}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-all ${activeTab === 'tts' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
+                      }`}
                   >
                     Text to Speech
                   </button>
                   <button
                     onClick={() => setActiveTab('voice-changer')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'voice-changer' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
-                    }`}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded transition-all ${activeTab === 'voice-changer' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
+                      }`}
                   >
                     Voice Changer
                   </button>
@@ -711,21 +705,19 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
                 <div className="flex gap-2">
                   <button
                     onClick={() => setActiveTab('sound-effects')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded border transition-all ${
-                      activeTab === 'sound-effects'
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
-                    }`}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded border transition-all ${activeTab === 'sound-effects'
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
+                      }`}
                   >
                     Sound Effects
                   </button>
                   <button
                     onClick={() => setActiveTab('voice-isolator')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded border transition-all ${
-                      activeTab === 'voice-isolator'
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
-                    }`}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded border transition-all ${activeTab === 'voice-isolator'
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
+                      }`}
                   >
                     Isolator
                   </button>
@@ -864,13 +856,11 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
                     <span className="text-sm font-medium">Remove Background Noise</span>
                     <button
                       onClick={() => setRemoveBackground(!removeBackground)}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        removeBackground ? 'bg-white/30' : 'bg-white/10'
-                      }`}
+                      className={`w-12 h-6 rounded-full transition-colors ${removeBackground ? 'bg-white/30' : 'bg-white/10'
+                        }`}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white mt-1 transition-transform ${
-                        removeBackground ? 'ml-7' : 'ml-1'
-                      }`} />
+                      <div className={`w-4 h-4 rounded-full bg-white mt-1 transition-transform ${removeBackground ? 'ml-7' : 'ml-1'
+                        }`} />
                     </button>
                   </div>
                 )}

@@ -9,8 +9,9 @@ import { GroupedModelSelector } from './GroupedModelSelector';
 import { useAuth } from '../../hooks/useAuth';
 import { getUnifiedPremiumStatus, UnifiedPremiumStatus } from '../../lib/unifiedPremiumAccess';
 import { useStudioMode } from '../../contexts/StudioModeContext';
+import { useNavigation } from '../../contexts/NavigationContext';
 
-export type StudioMode = 'chat' | 'image' | 'video' | 'music' | 'voice';
+export type StudioMode = 'chat' | 'image' | 'video' | 'music' | 'voice' | 'ppt' | 'code' | 'design';
 
 interface UnifiedStudioChatProps {
   projectId?: string | null;
@@ -24,12 +25,28 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
   onProjectNameChange,
 }) => {
   const { user } = useAuth();
+  const { currentView, navigateTo } = useNavigation();
   const { mode, setMode, isFullscreenGenerator } = useStudioMode();
   const [showControlPanel, setShowControlPanel] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [premiumStatus, setPremiumStatus] = useState<UnifiedPremiumStatus | null>(null);
   const [selectedModel, setSelectedModel] = useState('grok-4-fast');
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Determine initial mode from current view
+  const getInitialMode = (): StudioMode => {
+    const viewToModeMap: Record<string, StudioMode> = {
+      chat: 'chat',
+      image: 'image',
+      video: 'video',
+      music: 'music',
+      voice: 'voice',
+      ppt: 'ppt',
+      code: 'code',
+      design: 'design',
+    };
+    return viewToModeMap[currentView] || 'chat';
+  };
 
   // Image controls state
   const [imageAspectRatio, setImageAspectRatio] = useState('1:1');
@@ -58,6 +75,33 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
     };
     checkAccess();
   }, [user]);
+
+  // Set initial mode based on current view
+  useEffect(() => {
+    const initialMode = getInitialMode();
+    if (initialMode !== mode) {
+      setMode(initialMode);
+    }
+  }, [currentView]); // Run when currentView changes
+
+  // Auto-sync studio mode with navigation view
+  useEffect(() => {
+    const viewToModeMap: Record<string, StudioMode> = {
+      chat: 'chat',
+      image: 'image',
+      video: 'video',
+      music: 'music',
+      voice: 'voice',
+      ppt: 'ppt',
+      code: 'code',
+      design: 'design',
+    };
+
+    const newMode = viewToModeMap[currentView] || 'chat';
+    if (newMode !== mode) {
+      setMode(newMode);
+    }
+  }, [currentView, mode, setMode]);
 
   // Auto-collapse on scroll
   useEffect(() => {
@@ -102,6 +146,24 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
           name: 'Voice Synthesis',
           description: 'Text-to-speech with AI voices',
           icon: Mic,
+        };
+      case 'ppt':
+        return {
+          name: 'Presentation Studio',
+          description: 'Create professional presentations',
+          icon: Sparkles,
+        };
+      case 'code':
+        return {
+          name: 'Code Studio',
+          description: 'AI-powered code generation',
+          icon: Code,
+        };
+      case 'design':
+        return {
+          name: 'Design Studio',
+          description: 'Create designs with AI',
+          icon: Palette,
         };
       default:
         return {
@@ -154,6 +216,24 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
             onSpeedChange={setSpeechSpeed}
           />
         );
+      case 'ppt':
+        return (
+          <div className="text-center py-8">
+            <p className="text-white/60">PPT Studio controls coming soon...</p>
+          </div>
+        );
+      case 'code':
+        return (
+          <div className="text-center py-8">
+            <p className="text-white/60">Code Studio controls coming soon...</p>
+          </div>
+        );
+      case 'design':
+        return (
+          <div className="text-center py-8">
+            <p className="text-white/60">Design Studio controls coming soon...</p>
+          </div>
+        );
       default:
         return (
           <div className="space-y-6">
@@ -170,7 +250,7 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
                 return (
                   <button
                     key={studio.mode}
-                    onClick={() => setMode(studio.mode as StudioMode)}
+                    onClick={() => navigateTo(studio.mode as any)}
                     className={`group relative p-5 rounded-xl border transition-all hover:scale-105 ${
                       isActive
                         ? 'bg-gradient-to-br from-[#00FFF0]/20 to-[#8A2BE2]/20 border-[#00FFF0]/50 shadow-lg shadow-[#00FFF0]/20'
@@ -220,7 +300,7 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
   return (
     <div className="flex h-screen overflow-hidden relative">
       {/* Main Chat Component */}
-      <div className={`flex-1 overflow-hidden transition-all duration-300 ${showControlPanel && mode !== 'chat' && !isFullscreenGenerator ? 'mr-0 md:mr-80 lg:mr-96' : ''}`}>
+      <div className={`flex-1 overflow-hidden transition-all duration-300 ${mode !== 'chat' && !isFullscreenGenerator ? 'mr-0 md:mr-80 lg:mr-96' : ''}`}>
         <MainChat />
       </div>
 
@@ -235,8 +315,8 @@ export const UnifiedStudioChat: React.FC<UnifiedStudioChatProps> = ({
         </button>
       )}
 
-      {/* Right Control Panel - Only show for specific studios, not for chat mode or fullscreen generators */}
-      {showControlPanel && mode !== 'chat' && !isFullscreenGenerator && (
+      {/* Right Control Panel - Always show for studio modes */}
+      {mode !== 'chat' && !isFullscreenGenerator && (
         <div className={`absolute top-0 right-0 h-full w-full md:w-80 lg:w-96 bg-black/40 backdrop-blur-2xl border-l border-[#00FFF0]/20 flex flex-col overflow-hidden z-20 shadow-2xl transition-all duration-300 ${
           isCollapsed ? 'translate-x-full md:translate-x-0 md:w-16 lg:w-16' : ''
         }`}>

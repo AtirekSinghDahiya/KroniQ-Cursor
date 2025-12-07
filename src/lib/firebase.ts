@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAgD7C055XQLjZZCLaiCKfsZYz8r5XDqEQ",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "kosmio-ai.firebaseapp.com",
   projectId: "kosmio-ai",
   storageBucket: "kosmio-ai.firebasestorage.app",

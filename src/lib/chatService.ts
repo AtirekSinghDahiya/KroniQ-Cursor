@@ -13,7 +13,7 @@ export const getCurrentUserId = (): string | null => {
 // Create a new project
 export const createProject = async (
   name: string,
-  type: 'chat' | 'code' | 'design' | 'video' = 'chat',
+  type: 'chat' | 'code' | 'design' | 'video' | 'image' | 'music' | 'voice' | 'ppt' = 'chat',
   description?: string
 ): Promise<Project> => {
   const userId = getCurrentUserId();

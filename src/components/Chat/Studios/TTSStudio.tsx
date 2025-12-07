@@ -15,18 +15,23 @@ import { executeGeneration, getGenerationLimitMessage } from '../../../lib/unifi
 import { checkGenerationLimit } from '../../../lib/generationLimitsService';
 import { StudioHeader } from '../../Studio/StudioHeader';
 import { ModelSelector, ModelOption } from '../../Studio/ModelSelector';
+import { createStudioProject, updateProjectState, loadProject, generateStudioProjectName } from '../../../lib/studioProjectService';
+import { useStudioMode } from '../../../contexts/StudioModeContext';
 
 interface TTSStudioProps {
   onClose: () => void;
   initialText?: string;
+  projectId?: string;
 }
 
 export const TTSStudio: React.FC<TTSStudioProps> = ({
   onClose,
-  initialText = ''
+  initialText = '',
+  projectId: initialProjectId
 }) => {
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { projectId: activeProjectId } = useStudioMode();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // State
@@ -52,12 +57,85 @@ export const TTSStudio: React.FC<TTSStudioProps> = ({
   // Limit info
   const [limitInfo, setLimitInfo] = useState<string>('');
   const [tokenBalance, setTokenBalance] = useState<number>(0);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(initialProjectId || activeProjectId || null);
 
   const STUDIO_COLOR = '#00B4D8';
 
   useEffect(() => {
     loadLimitInfo();
   }, [user]);
+
+  useEffect(() => {
+    if (initialProjectId && user?.uid) {
+      loadExistingProject(initialProjectId);
+    }
+  }, [initialProjectId, user]);
+
+  const loadExistingProject = async (projectId: string) => {
+    try {
+      const result = await loadProject(projectId);
+      if (result.success && result.project) {
+        setCurrentProjectId(projectId);
+        const state = result.project.session_state || {};
+        setText(state.text || '');
+        setSelectedModelId(state.selectedModelId || ELEVENLABS_V3_MODELS.TURBO_V3.id);
+        setSelectedVoiceId(state.selectedVoiceId || ELEVENLABS_V3_VOICES[0].id);
+        setStability(state.stability || 50);
+        setSimilarityBoost(state.similarityBoost || 75);
+        setStyle(state.style || 0);
+        setUseSpeakerBoost(state.useSpeakerBoost ?? true);
+        console.log('✅ Loaded existing TTS project:', projectId);
+      }
+    } catch (error) {
+      console.error('Error loading TTS project:', error);
+    }
+  };
+
+  const saveProjectState = async (overrides: any = {}) => {
+    if (!user?.uid) return null;
+
+    const sessionState = {
+      text,
+      selectedModelId,
+      selectedVoiceId,
+      stability,
+      similarityBoost,
+      style,
+      useSpeakerBoost,
+      ...overrides
+    };
+
+    try {
+      if (currentProjectId) {
+        await updateProjectState({
+          projectId: currentProjectId,
+          sessionState
+        });
+        console.log('✅ TTS project state updated');
+        return currentProjectId;
+      } else {
+        const projectName = generateStudioProjectName('tts', text);
+        const result = await createStudioProject({
+          userId: user.uid,
+          studioType: 'tts',
+          name: projectName,
+          description: text,
+          model: selectedModelId,
+          sessionState
+        });
+
+        if (result.success && result.projectId) {
+          setCurrentProjectId(result.projectId);
+          console.log('✅ New TTS project created:', result.projectId);
+          showToast('success', 'Project Saved', 'Your TTS project has been saved');
+          return result.projectId;
+        }
+      }
+    } catch (error) {
+      console.error('Error saving TTS project:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     return () => {
@@ -89,10 +167,20 @@ export const TTSStudio: React.FC<TTSStudioProps> = ({
 
   const loadLimitInfo = async () => {
     if (!user?.uid) return;
+
+    // Load token balance
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tokens_balance')
+      .eq('id', user.uid)
+      .maybeSingle();
+
+    if (profile) {
+      setTokenBalance(profile.tokens_balance || 0);
+    }
+
     const limit = await checkGenerationLimit(user.uid, 'tts');
     setLimitInfo(getGenerationLimitMessage('tts', limit.isPaid, limit.current, limit.limit));
-    // Note: tokenBalance would come from user tier service in real implementation
-    setTokenBalance(50000);
   };
 
   const models: ModelOption[] = Object.values(ELEVENLABS_V3_MODELS).map(model => ({
@@ -150,6 +238,11 @@ export const TTSStudio: React.FC<TTSStudioProps> = ({
       const url = URL.createObjectURL(blob);
       setAudioBlob(blob);
       setAudioUrl(url);
+
+      // Save project state (without audio URL for now as it is a blob URL, unless uploaded)
+      // TODO: Upload blob to storage for full persistence
+      await saveProjectState();
+
       showToast('success', 'Speech Generated!', 'Your voiceover is ready');
       await loadLimitInfo();
     } else if (result.limitReached) {
@@ -363,11 +456,10 @@ export const TTSStudio: React.FC<TTSStudioProps> = ({
                     key={voice.id}
                     onClick={() => setSelectedVoiceId(voice.id)}
                     disabled={isGenerating}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      selectedVoiceId === voice.id
+                    className={`p-3 rounded-lg border text-left transition-all ${selectedVoiceId === voice.id
                         ? 'bg-[#00B4D8]/10 border-[#00B4D8]/40 text-white'
                         : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="font-medium text-sm mb-0.5">{voice.name}</div>
                     <div className="text-xs opacity-60">{voice.gender}</div>

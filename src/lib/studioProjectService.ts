@@ -54,12 +54,10 @@ export async function createStudioProject(
       name: name.substring(0, 50)
     });
 
-    const projectId = `${studioType}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-    const { error: projectError } = await supabase
+    // Let Supabase generate the UUID
+    const { data: projectData, error: projectError } = await supabase
       .from('projects')
       .insert({
-        id: projectId,
         user_id: userId,
         name,
         type: studioType,
@@ -68,12 +66,16 @@ export async function createStudioProject(
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      })
+      .select('id')
+      .single();
 
-    if (projectError) {
+    if (projectError || !projectData) {
       console.error('❌ Error creating project:', projectError);
-      return { success: false, error: projectError.message };
+      return { success: false, error: projectError?.message || 'Failed to create project record' };
     }
+
+    const projectId = projectData.id;
 
     const { error: metadataError } = await supabase
       .from('project_metadata')
@@ -88,6 +90,7 @@ export async function createStudioProject(
 
     if (metadataError) {
       console.error('❌ Error creating project metadata:', metadataError);
+      // Attempt to clean up the project if metadata failed
       await supabase.from('projects').delete().eq('id', projectId);
       return { success: false, error: metadataError.message };
     }

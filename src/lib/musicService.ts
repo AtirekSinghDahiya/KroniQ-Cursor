@@ -3,7 +3,7 @@
  * Uses Kie AI (Suno) for high-quality music generation
  */
 
-import { generateKieMusic, KIE_MODELS } from './kieAIService';
+import { generateSunoMusic } from './sunoService';
 
 export interface MusicGenerationOptions {
   prompt: string;
@@ -20,19 +20,40 @@ export interface GeneratedMusic {
 }
 
 /**
- * Generate music using Kie AI (Suno)
+ * Generate music using Suno API
  */
 export async function generateMusic(options: MusicGenerationOptions): Promise<GeneratedMusic> {
   const {
     prompt,
     duration = 30,
-    model = 'suno-v3.5'
+    model = 'V3_5'
   } = options;
 
-  console.log('🎵 Generating music with Kie AI (Suno):', { prompt, duration });
+  console.log('🎵 Generating music with Suno API:', { prompt, duration });
 
   try {
-    const musicUrl = await generateKieMusic(prompt, false);
+    // Get Suno API key from environment
+    const sunoApiKey = import.meta.env.VITE_SUNO_API_KEY;
+    if (!sunoApiKey) {
+      console.warn('⚠️ Suno API key not configured, returning placeholder');
+      // Return a placeholder response
+      return {
+        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+        prompt: prompt,
+        timestamp: new Date(),
+        model: 'placeholder',
+        duration: duration
+      };
+    }
+
+    const musicUrl = await generateSunoMusic({
+      prompt: prompt,
+      style: 'pop', // Default style
+      title: `AI Generated Music - ${new Date().toLocaleDateString()}`,
+      customMode: true,
+      instrumental: false,
+      model: model,
+    }, sunoApiKey);
 
     console.log('✅ Music generated successfully');
 
@@ -58,10 +79,13 @@ export function isMusicGenerationAvailable(): boolean {
 }
 
 /**
- * Get available music models from Kie AI
+ * Get available music models from Suno API
  */
 export function getAvailableMusicModels() {
-  return KIE_MODELS.music;
+  return [
+    { id: 'V3_5', name: 'Suno V3.5', description: 'Latest Suno music model' },
+    { id: 'V4', name: 'Suno V4', description: 'Advanced Suno music generation' }
+  ];
 }
 
 /**

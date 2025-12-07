@@ -35,6 +35,7 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
   initialPrompt = '',
   projectId: initialProjectId
 }) => {
+  console.log('🎨 ImageStudio component rendered with:', { initialPrompt, initialProjectId });
   const { showToast } = useToast();
   const { user } = useAuth();
 
@@ -254,72 +255,72 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
 
     try {
       const result = await executeGeneration({
-      userId: user.uid,
-      generationType: 'image',
-      modelId: selectedModel,
-      provider: 'kie-ai',
-      onProgress: setProgress
-    }, async () => {
-      setProgress('Generating image with Kie AI...');
+        userId: user.uid,
+        generationType: 'image',
+        modelId: selectedModel,
+        provider: 'kie-ai',
+        onProgress: setProgress
+      }, async () => {
+        setProgress('Generating image with Kie AI...');
 
-      const imageResult = await Promise.race([
-        generateImage({
-          prompt,
-          model: selectedModel
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Image generation timeout after 5 minutes')), 300000)
-        )
-      ]);
+        const imageResult = await Promise.race([
+          generateImage({
+            prompt,
+            model: selectedModel
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Image generation timeout after 5 minutes')), 300000)
+          )
+        ]);
 
-      return imageResult.url;
-    });
+        return imageResult.url;
+      });
 
-    if (result.success && result.data) {
-      setCurrentImage(result.data);
-      saveToHistory(result.data, prompt);
+      if (result.success && result.data) {
+        setCurrentImage(result.data);
+        saveToHistory(result.data, prompt);
 
-      // Save or create project
-      let projectId = currentProjectId;
-      if (!projectId) {
-        projectId = await saveProjectState();
-      }
+        // Save or create project
+        let projectId = currentProjectId;
+        if (!projectId) {
+          projectId = await saveProjectState();
+        }
 
-      // Save messages to database
-      if (projectId) {
-        const dimensions = aspectRatios.find(r => r.id === aspectRatio)?.dimensions || '1024×1024';
-        const assistantMessage = formatImageMessage(result.data, selectedModel, dimensions);
+        // Save messages to database
+        if (projectId) {
+          const dimensions = aspectRatios.find(r => r.id === aspectRatio)?.dimensions || '1024×1024';
+          const assistantMessage = formatImageMessage(result.data, selectedModel, dimensions);
 
-        await saveStudioGeneration(projectId, prompt, assistantMessage, {
-          type: 'image',
-          url: result.data,
+          await saveStudioGeneration(projectId, prompt, assistantMessage, {
+            type: 'image',
+            url: result.data,
+            model: selectedModel,
+            dimensions: dimensions,
+            aspectRatio: aspectRatio,
+            provider: selectedModel === 'imagen-4' ? 'google-imagen' : 'google-gemini'
+          });
+
+          // Reload messages to show new ones
+          const updatedMessages = await loadStudioMessages(projectId);
+          setMessages(updatedMessages as StudioMessage[]);
+        }
+
+        await saveImageToProject(user.uid, prompt, result.data, {
           model: selectedModel,
-          dimensions: dimensions,
-          aspectRatio: aspectRatio,
+          dimensions: aspectRatio,
           provider: selectedModel === 'imagen-4' ? 'google-imagen' : 'google-gemini'
         });
 
-        // Reload messages to show new ones
-        const updatedMessages = await loadStudioMessages(projectId);
-        setMessages(updatedMessages as StudioMessage[]);
+        showToast('success', 'Image Generated!', 'Your image is ready');
+        await loadData();
+        setPrompt(''); // Clear prompt for next generation
+      } else if (result.limitReached) {
+        showToast('error', 'Limit Reached', result.error || 'Generation limit exceeded');
+      } else if (result.insufficientTokens) {
+        showToast('error', 'Insufficient Tokens', result.error || 'Not enough tokens');
+      } else {
+        showToast('error', 'Generation Failed', result.error || 'Failed to generate image');
       }
-
-      await saveImageToProject(user.uid, prompt, result.data, {
-        model: selectedModel,
-        dimensions: aspectRatio,
-        provider: selectedModel === 'imagen-4' ? 'google-imagen' : 'google-gemini'
-      });
-
-      showToast('success', 'Image Generated!', 'Your image is ready');
-      await loadData();
-      setPrompt(''); // Clear prompt for next generation
-    } else if (result.limitReached) {
-      showToast('error', 'Limit Reached', result.error || 'Generation limit exceeded');
-    } else if (result.insufficientTokens) {
-      showToast('error', 'Insufficient Tokens', result.error || 'Not enough tokens');
-    } else {
-      showToast('error', 'Generation Failed', result.error || 'Failed to generate image');
-    }
     } catch (error) {
       console.error('Error generating image:', error);
       showToast('error', 'Generation Failed', error instanceof Error ? error.message : 'Failed to generate image');
@@ -339,15 +340,15 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
 
   return (
     <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
-      {/* History Sidebar - Hidden, using main sidebar instead */}
-      <div className="hidden">
+      {/* History Sidebar - Visible on desktop or when toggled */}
+      <div className={`${showSidebar ? 'flex' : 'hidden'} lg:flex lg:w-80 border-r border-white/10 flex-col bg-black absolute lg:relative z-20 h-full transition-all duration-300`}>
         <div className="h-full flex flex-col">
           {/* Sidebar Header */}
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-white" />
-                <h2 className="font-semibold">KroniQ AI</h2>
+                <h2 className="font-semibold">🎨 NEW Image Studio</h2>
               </div>
               <button
                 onClick={() => setShowSidebar(false)}
@@ -471,7 +472,7 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
               {/* Mobile token display */}
               <div className="sm:hidden flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
                 <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance/1000)}k` : tokenBalance}</span>
+                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance / 1000)}k` : tokenBalance}</span>
               </div>
 
               <button
@@ -491,93 +492,93 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
           <div className="flex-1 flex flex-col bg-black relative overflow-hidden">
             {/* Messages Display Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-            {isGenerating ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-6">
-                  <div className="relative">
-                    <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="text-center px-4">
-                    <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your image...</p>
-                    <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
-                  </div>
-                </div>
-              </div>
-            ) : messages.length > 0 ? (
-              <StudioMessageView
-                messages={messages}
-                onDownload={handleDownload}
-                onCopy={(text) => {
-                  navigator.clipboard.writeText(text);
-                  showToast('success', 'Copied', 'Text copied to clipboard');
-                }}
-                renderMedia={(message) => {
-                  if (message.payload?.type === 'image' && message.payload?.url) {
-                    return (
-                      <div className="relative rounded-lg overflow-hidden border border-white/10 max-w-2xl">
-                        <img
-                          src={message.payload.url}
-                          alt="Generated image"
-                          className="w-full h-auto"
-                        />
-                        <div className="absolute top-2 right-2 flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const link = document.createElement('a');
-                              link.href = message.payload.url;
-                              link.target = '_blank';
-                              link.click();
-                            }}
-                            className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
-                            title="View full size"
-                          >
-                            <Maximize2 className="w-4 h-4" />
-                          </button>
-                        </div>
+              {isGenerating ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative">
+                      <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
                       </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center max-w-2xl px-4">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
-                    <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Vision</h3>
-                  <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
-                    Describe your image in the prompt below. Be detailed for best results - include style, mood, lighting, and subject details.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[
-                        'A serene mountain landscape at sunset with golden light',
-                        'Futuristic cityscape with neon lights and flying cars',
-                        'Abstract geometric art with monochrome gradients',
-                        'Professional portrait in natural lighting'
-                      ].map((example) => (
-                        <button
-                          key={example}
-                          onClick={() => setPrompt(example)}
-                          className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
-                        >
-                          <span className="text-white mr-2">→</span>
-                          {example}
-                        </button>
-                      ))}
+                    </div>
+                    <div className="text-center px-4">
+                      <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your image...</p>
+                      <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : messages.length > 0 ? (
+                <StudioMessageView
+                  messages={messages}
+                  onDownload={handleDownload}
+                  onCopy={(text) => {
+                    navigator.clipboard.writeText(text);
+                    showToast('success', 'Copied', 'Text copied to clipboard');
+                  }}
+                  renderMedia={(message) => {
+                    if (message.payload?.type === 'image' && message.payload?.url) {
+                      return (
+                        <div className="relative rounded-lg overflow-hidden border border-white/10 max-w-2xl">
+                          <img
+                            src={message.payload.url}
+                            alt="Generated image"
+                            className="w-full h-auto"
+                          />
+                          <div className="absolute top-2 right-2 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const link = document.createElement('a');
+                                link.href = message.payload.url;
+                                link.target = '_blank';
+                                link.click();
+                              }}
+                              className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
+                              title="View full size"
+                            >
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center max-w-2xl px-4">
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
+                      <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Vision</h3>
+                    <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
+                      Describe your image in the prompt below. Be detailed for best results - include style, mood, lighting, and subject details.
+                    </p>
+                    <div className="space-y-4">
+                      <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {[
+                          'A serene mountain landscape at sunset with golden light',
+                          'Futuristic cityscape with neon lights and flying cars',
+                          'Abstract geometric art with monochrome gradients',
+                          'Professional portrait in natural lighting'
+                        ].map((example) => (
+                          <button
+                            key={example}
+                            onClick={() => setPrompt(example)}
+                            className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                          >
+                            <span className="text-white mr-2">→</span>
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Prompt Input Area */}
@@ -639,11 +640,10 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
                     key={model.id}
                     onClick={() => setSelectedModel(model.id)}
                     disabled={isGenerating}
-                    className={`w-full text-left p-3 sm:p-4 rounded-lg border transition-all ${
-                      selectedModel === model.id
+                    className={`w-full text-left p-3 sm:p-4 rounded-lg border transition-all ${selectedModel === model.id
                         ? 'border-white/30 bg-white/10'
                         : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="font-medium text-sm sm:text-base">{model.name}</span>
@@ -671,16 +671,14 @@ export const ImageStudio: React.FC<ImageStudioProps> = ({
                     key={ar.id}
                     onClick={() => setAspectRatio(ar.id)}
                     disabled={isGenerating}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      aspectRatio === ar.id
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${aspectRatio === ar.id
                         ? 'bg-white/20 border-white/30 text-white'
                         : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded border-2 flex items-center justify-center ${
-                        aspectRatio === ar.id ? 'border-white/30' : 'border-white/20'
-                      }`}>
+                      <div className={`w-8 h-8 rounded border-2 flex items-center justify-center ${aspectRatio === ar.id ? 'border-white/30' : 'border-white/20'
+                        }`}>
                         <div
                           className="bg-white/40 rounded-sm"
                           style={{

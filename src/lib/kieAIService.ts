@@ -1,8 +1,12 @@
-const KIE_API_KEY = 'c2fc73165de059fdcd158e418571b3d2';
+const KIE_API_KEY = import.meta.env.VITE_KIE_API_KEY;
 const KIE_BASE_URL = 'https://api.kie.ai';
 
 export async function generateKieImage(prompt: string, model: string = 'flux-pro'): Promise<string> {
   console.log('🎨 Generating image with Kie AI:', { prompt, model });
+
+  if (!KIE_API_KEY) {
+    throw new Error('Kie AI API Key is missing. Please add VITE_KIE_API_KEY to your .env file.');
+  }
 
   try {
     if (model === '4o-image' || model === 'gpt-image-1') {
@@ -333,11 +337,21 @@ export async function generateKieMusic(
     const data = await response.json();
     console.log('✅ Suno music task created:', data);
 
-    if (data.code === 200 && data.data?.taskId) {
-      return await pollSunoMusicStatus(data.data.taskId);
+    // Try different response structures
+    const taskId = data.data?.taskId || data.taskId || data.id || data.task_id;
+    if ((data.code === 200 || data.success) && taskId) {
+      return await pollSunoMusicStatus(taskId);
     }
 
-    throw new Error('No task ID in response');
+    // If no task ID found, check if the response contains a direct URL
+    if (data.data?.audioUrl || data.audioUrl || data.url) {
+      const audioUrl = data.data?.audioUrl || data.audioUrl || data.url;
+      console.log('✅ Direct audio URL received:', audioUrl);
+      return audioUrl;
+    }
+
+    console.error('❌ Unexpected response structure:', data);
+    throw new Error('No task ID or audio URL in response');
   } catch (error) {
     console.error('❌ Kie AI music generation error:', error);
     throw error;
@@ -361,14 +375,27 @@ async function pollSunoMusicStatus(taskId: string, maxAttempts: number = 120): P
 
       const data = await response.json();
 
-      if (data.code === 200 && data.data?.status === 'complete') {
-        const audioUrl = data.data.audioUrls?.[0] || data.data.audioUrl || data.data.audio_url;
+      // Check for completion status
+      const isComplete = (data.code === 200 && data.data?.status === 'complete') ||
+                        (data.success && data.status === 'complete') ||
+                        (data.status === 'complete');
+
+      if (isComplete) {
+        const audioUrl = data.data?.audioUrls?.[0] ||
+                        data.data?.audioUrl ||
+                        data.data?.audio_url ||
+                        data.audioUrl ||
+                        data.audio_url ||
+                        data.url;
         if (audioUrl) {
           console.log('✅ Suno music generation completed');
           return audioUrl;
         }
-      } else if (data.data?.status === 'failed') {
-        throw new Error(data.data.error || 'Music generation failed');
+      }
+
+      // Check for failure
+      if (data.data?.status === 'failed' || data.status === 'failed') {
+        throw new Error(data.data?.error || data.error || 'Music generation failed');
       }
     } catch (error) {
       if (attempt === maxAttempts - 1) throw error;
