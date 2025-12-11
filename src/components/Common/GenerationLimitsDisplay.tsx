@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Video, Music, Mic } from 'lucide-react';
+import { Image, Video, Music, Mic, Presentation } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkGenerationLimit, GenerationType } from '../../lib/generationLimitsService';
 import { supabase } from '../../lib/supabaseClient';
@@ -24,36 +24,50 @@ export const GenerationLimitsDisplay: React.FC = () => {
 
     const fetchLimits = async () => {
       try {
-        console.log('🎬 [GenerationLimits] Fetching limits for user:', user.uid);
-
         const tierInfo = await getUserTier(user.uid);
         const isPremiumUser = tierInfo.isPremium;
 
-        console.log('👤 [GenerationLimits] User tier check:', {
-          userId: user.uid,
-          tier: tierInfo.tier,
-          isPremium: isPremiumUser,
-          hasPaidTokens: tierInfo.hasPaidTokens,
-          tokenBalance: tierInfo.tokenBalance
-        });
-
-        const types: GenerationType[] = ['image', 'video', 'song', 'tts'];
+        // Include PPT in generation types
+        const types: GenerationType[] = ['image', 'video', 'song', 'tts', 'ppt'];
         const limitsData: GenerationLimit[] = [];
 
+        // Fallback limits for free users
+        const defaultLimits: Record<GenerationType, number> = {
+          image: 3,
+          video: 1,
+          song: 2,
+          tts: 3,
+          ppt: 2
+        };
+
         for (const type of types) {
-          const limitInfo = await checkGenerationLimit(user.uid, type);
+          let limitInfo = await checkGenerationLimit(user.uid, type);
+
+          // Use fallback if limit is 0 or negative (RPC failure)
+          if (limitInfo.limit <= 0) {
+            limitInfo = {
+              canGenerate: true,
+              current: 0,
+              limit: defaultLimits[type],
+              isPaid: false,
+              message: `${defaultLimits[type]} of ${defaultLimits[type]} remaining`
+            };
+          }
+
+          // Only show unlimited for users with ACTIVE paid subscription
+          // Free users should always see their limits, even if they have bonus tokens
+          const hasActiveSubscription = tierInfo.tier === 'premium';
 
           limitsData.push({
             type,
             icon: getIcon(type),
             label: getLabel(type),
-            current: limitInfo.current,
+            current: Math.max(0, limitInfo.current), // Ensure non-negative
             limit: limitInfo.limit,
-            isPaid: isPremiumUser,
+            isPaid: hasActiveSubscription,
           });
         }
 
-        console.log('✅ [GenerationLimits] Limits calculated:', limitsData);
         setLimits(limitsData);
       } catch (error) {
         console.error('❌ [GenerationLimits] Error fetching generation limits:', error);
@@ -67,7 +81,7 @@ export const GenerationLimitsDisplay: React.FC = () => {
     // Real-time subscription to generation limits changes
     if (!user?.uid) return;
 
-    console.log('🔔 Setting up real-time subscription for generation limits');
+    // Real-time subscription to generation limits changes
 
     const channel = supabase
       .channel(`generation-limits-${user.uid}`)
@@ -79,8 +93,8 @@ export const GenerationLimitsDisplay: React.FC = () => {
           table: 'generation_limits',
           filter: `user_id=eq.${user.uid}`
         },
-        (payload) => {
-          console.log('🔄 Generation limits updated via realtime:', payload);
+        (_payload: unknown) => {
+          // Generation limits updated via realtime
           fetchLimits();
         }
       )
@@ -88,7 +102,6 @@ export const GenerationLimitsDisplay: React.FC = () => {
 
     // Refresh every 10 seconds as fallback
     const interval = setInterval(() => {
-      console.log('⏰ Polling generation limits...');
       fetchLimits();
     }, 10000);
 
@@ -104,6 +117,7 @@ export const GenerationLimitsDisplay: React.FC = () => {
       case 'video': return Video;
       case 'song': return Music;
       case 'tts': return Mic;
+      case 'ppt': return Presentation;
       default: return Image;
     }
   };
@@ -114,6 +128,7 @@ export const GenerationLimitsDisplay: React.FC = () => {
       case 'video': return 'Videos';
       case 'song': return 'Songs';
       case 'tts': return 'Voice';
+      case 'ppt': return 'PPT';
       default: return type;
     }
   };

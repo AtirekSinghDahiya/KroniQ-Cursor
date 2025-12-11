@@ -1,28 +1,21 @@
-import { supabase } from './supabase';
+/**
+ * Studio Project Service
+ * Handles studio-specific project operations using Firestore
+ */
+
+import {
+  createProject,
+  getProjects,
+  getProject,
+  updateProject as updateFirestoreProject,
+  deleteProject as deleteFirestoreProject,
+  type Project
+} from './firestoreService';
 
 export type StudioType = 'image' | 'video' | 'music' | 'tts' | 'voice' | 'ppt';
 
-export interface StudioProject {
-  id: string;
-  user_id: string;
-  name: string;
-  type: StudioType;
-  description?: string;
-  ai_model?: string;
-  status?: string;
-  created_at: string;
-  updated_at: string;
+export interface StudioProject extends Project {
   session_state?: any;
-}
-
-export interface ProjectMetadata {
-  id: string;
-  project_id: string;
-  user_id: string;
-  studio_type: StudioType;
-  session_state: any;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateProjectOptions {
@@ -46,57 +39,17 @@ export async function createStudioProject(
   options: CreateProjectOptions
 ): Promise<{ success: boolean; projectId?: string; error?: string }> {
   try {
-    const { userId, studioType, name, description, model, sessionState } = options;
+    const { studioType, name, description, model, sessionState } = options;
 
-    console.log('🎨 Creating studio project:', {
-      userId,
+    const project = await createProject(
+      name,
       studioType,
-      name: name.substring(0, 50)
-    });
+      description || name,
+      model || 'default',
+      sessionState
+    );
 
-    // Let Supabase generate the UUID
-    const { data: projectData, error: projectError } = await supabase
-      .from('projects')
-      .insert({
-        user_id: userId,
-        name,
-        type: studioType,
-        description: description || name,
-        ai_model: model || 'default',
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select('id')
-      .single();
-
-    if (projectError || !projectData) {
-      console.error('❌ Error creating project:', projectError);
-      return { success: false, error: projectError?.message || 'Failed to create project record' };
-    }
-
-    const projectId = projectData.id;
-
-    const { error: metadataError } = await supabase
-      .from('project_metadata')
-      .insert({
-        project_id: projectId,
-        user_id: userId,
-        studio_type: studioType,
-        session_state: sessionState,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (metadataError) {
-      console.error('❌ Error creating project metadata:', metadataError);
-      // Attempt to clean up the project if metadata failed
-      await supabase.from('projects').delete().eq('id', projectId);
-      return { success: false, error: metadataError.message };
-    }
-
-    console.log('✅ Studio project created successfully:', projectId);
-    return { success: true, projectId };
+    return { success: true, projectId: project.id };
 
   } catch (error: any) {
     console.error('❌ Exception creating studio project:', error);
@@ -113,33 +66,8 @@ export async function updateProjectState(
   try {
     const { projectId, sessionState } = options;
 
-    console.log('💾 Updating project state:', projectId);
+    await updateFirestoreProject(projectId, { sessionState });
 
-    const { error: metadataError } = await supabase
-      .from('project_metadata')
-      .update({
-        session_state: sessionState,
-        updated_at: new Date().toISOString()
-      })
-      .eq('project_id', projectId);
-
-    if (metadataError) {
-      console.error('❌ Error updating project metadata:', metadataError);
-      return { success: false, error: metadataError.message };
-    }
-
-    const { error: projectError } = await supabase
-      .from('projects')
-      .update({
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', projectId);
-
-    if (projectError) {
-      console.error('❌ Error updating project timestamp:', projectError);
-    }
-
-    console.log('✅ Project state updated successfully');
     return { success: true };
 
   } catch (error: any) {
@@ -155,36 +83,18 @@ export async function loadProject(
   projectId: string
 ): Promise<{ success: boolean; project?: StudioProject; error?: string }> {
   try {
-    console.log('📂 Loading project:', projectId);
+    const project = await getProject(projectId);
 
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .maybeSingle();
-
-    if (projectError || !project) {
-      console.error('❌ Error loading project:', projectError);
-      return { success: false, error: projectError?.message || 'Project not found' };
+    if (!project) {
+      return { success: false, error: 'Project not found' };
     }
 
-    const { data: metadata, error: metadataError } = await supabase
-      .from('project_metadata')
-      .select('*')
-      .eq('project_id', projectId)
-      .maybeSingle();
-
-    if (metadataError) {
-      console.error('❌ Error loading project metadata:', metadataError);
-    }
-
-    const completeProject: StudioProject = {
+    const studioProject: StudioProject = {
       ...project,
-      session_state: metadata?.session_state || {}
+      session_state: project.sessionState || {}
     };
 
-    console.log('✅ Project loaded successfully');
-    return { success: true, project: completeProject };
+    return { success: true, project: studioProject };
 
   } catch (error: any) {
     console.error('❌ Exception loading project:', error);
@@ -200,35 +110,14 @@ export async function getUserProjects(
   studioType?: StudioType
 ): Promise<{ success: boolean; projects?: StudioProject[]; error?: string }> {
   try {
-    console.log('📋 Fetching user projects:', { userId, studioType });
+    const projects = await getProjects(studioType);
 
-    let query = supabase
-      .from('projects')
-      .select(`
-        *,
-        project_metadata (*)
-      `)
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
-
-    if (studioType) {
-      query = query.eq('type', studioType);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('❌ Error fetching projects:', error);
-      return { success: false, error: error.message };
-    }
-
-    const projects: StudioProject[] = (data || []).map((proj: any) => ({
+    const studioProjects: StudioProject[] = projects.map(proj => ({
       ...proj,
-      session_state: proj.project_metadata?.[0]?.session_state || {}
+      session_state: proj.sessionState || {}
     }));
 
-    console.log(`✅ Fetched ${projects.length} projects`);
-    return { success: true, projects };
+    return { success: true, projects: studioProjects };
 
   } catch (error: any) {
     console.error('❌ Exception fetching projects:', error);
@@ -243,19 +132,8 @@ export async function deleteProject(
   projectId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('🗑️ Deleting project:', projectId);
+    await deleteFirestoreProject(projectId);
 
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', projectId);
-
-    if (error) {
-      console.error('❌ Error deleting project:', error);
-      return { success: false, error: error.message };
-    }
-
-    console.log('✅ Project deleted successfully');
     return { success: true };
 
   } catch (error: any) {

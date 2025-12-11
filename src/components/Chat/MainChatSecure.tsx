@@ -70,16 +70,16 @@ export const MainChat: React.FC = () => {
     setIsLoading(true);
 
     try {
-      if (!user?.uid) {
+      if (!currentUser?.uid) {
         throw new Error('Not authenticated');
       }
 
-      const creditCheck = await MessageCreditsService.checkAndResetLimits(user.uid);
+      const creditCheck = await MessageCreditsService.checkAndResetLimits(currentUser.uid);
       if (!creditCheck.success) {
         throw new Error('Failed to check message credits');
       }
 
-      const credits = await MessageCreditsService.getUserCredits(user.uid);
+      const credits = await MessageCreditsService.getUserCredits(currentUser.uid);
       if (!credits || !MessageCreditsService.canSendMessage(credits)) {
         const upgradeMsg = MessageCreditsService.getUpgradeMessage(credits!);
         showToast('error', 'Message Limit Reached', upgradeMsg || 'You have reached your message limit');
@@ -117,7 +117,7 @@ export const MainChat: React.FC = () => {
       await createMessage(projectId, 'user', text);
 
       const deductResult = await MessageCreditsService.deductMessageCredit(
-        user.uid,
+        currentUser.uid,
         selectedProvider,
         'chat'
       );
@@ -172,30 +172,30 @@ export const MainChat: React.FC = () => {
   const renderLandingView = () => (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
       <div className="max-w-2xl">
-        <div className="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
+        <div className="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-full bg-gradient-to-br from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4]">
           <Sparkles className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4] bg-clip-text text-transparent">
           Welcome to KroniQ AI
         </h1>
         <p className="text-gray-400 text-lg mb-8">
           Start a conversation or describe what you want to create
         </p>
         <div className="grid grid-cols-2 gap-4 text-left">
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-blue-500/50 transition-colors cursor-pointer">
-            <h3 className="font-semibold text-white mb-2">Chat</h3>
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-[#3B82F6]/50 hover:bg-[#3B82F6]/5 transition-all cursor-pointer group">
+            <h3 className="font-semibold text-white mb-2 group-hover:text-[#3B82F6]">Chat</h3>
             <p className="text-sm text-gray-400">General conversation and assistance</p>
           </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors cursor-pointer">
-            <h3 className="font-semibold text-white mb-2">Code</h3>
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-[#8B5CF6]/50 hover:bg-[#8B5CF6]/5 transition-all cursor-pointer group">
+            <h3 className="font-semibold text-white mb-2 group-hover:text-[#8B5CF6]">Code</h3>
             <p className="text-sm text-gray-400">Build apps and write code</p>
           </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-pink-500/50 transition-colors cursor-pointer">
-            <h3 className="font-semibold text-white mb-2">Design</h3>
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-[#06B6D4]/50 hover:bg-[#06B6D4]/5 transition-all cursor-pointer group">
+            <h3 className="font-semibold text-white mb-2 group-hover:text-[#06B6D4]">Design</h3>
             <p className="text-sm text-gray-400">Create graphics and designs</p>
           </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-green-500/50 transition-colors cursor-pointer">
-            <h3 className="font-semibold text-white mb-2">Video</h3>
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-[#F97316]/50 hover:bg-[#F97316]/5 transition-all cursor-pointer group">
+            <h3 className="font-semibold text-white mb-2 group-hover:text-[#F97316]">Video</h3>
             <p className="text-sm text-gray-400">Edit and create videos</p>
           </div>
         </div>
@@ -211,11 +211,10 @@ export const MainChat: React.FC = () => {
           className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           <div
-            className={`max-w-[70%] p-4 rounded-2xl ${
-              message.role === 'user'
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+            className={`max-w-[70%] p-4 rounded-2xl ${message.role === 'user'
+                ? 'bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4] text-white'
                 : 'bg-white/5 border border-white/10 text-gray-100'
-            }`}
+              }`}
           >
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
@@ -225,9 +224,9 @@ export const MainChat: React.FC = () => {
         <div className="flex justify-start">
           <div className="max-w-[70%] p-4 rounded-2xl bg-white/5 border border-white/10">
             <div className="flex space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div className="w-2 h-2 bg-[#3B82F6] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-[#8B5CF6] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-[#06B6D4] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
           </div>
         </div>
@@ -258,14 +257,14 @@ export const MainChat: React.FC = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="w-full p-4 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full p-4 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] resize-none"
                 rows={1}
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputValue.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4] text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="w-5 h-5" />
               </button>

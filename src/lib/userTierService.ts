@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { db } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export interface UserTierInfo {
   tier: 'free' | 'premium';
@@ -9,61 +10,51 @@ export interface UserTierInfo {
   paidTokens: number;
 }
 
+/**
+ * Get user tier information from Firebase Firestore
+ */
 export async function getUserTier(userId: string): Promise<UserTierInfo> {
   try {
-    console.log('🔍 [TierService] Getting user tier for:', userId);
 
-    const { data, error } = await supabase
-      .rpc('get_user_tier', { p_user_id: userId })
-      .maybeSingle();
+    // Get user profile from Firestore
+    const userDoc = await getDoc(doc(db, 'users', userId));
 
-    if (error) {
-      console.error('❌ [TierService] Error getting user tier:', error);
-      return {
-        tier: 'free',
-        isPremium: false,
-        hasPaidTokens: false,
-        tokenBalance: 0,
-        freeTokens: 0,
-        paidTokens: 0
-      };
+    if (!userDoc.exists()) {
+      return getDefaultTierInfo();
     }
 
-    if (!data) {
-      console.warn('⚠️ [TierService] No tier data found for user');
-      return {
-        tier: 'free',
-        isPremium: false,
-        hasPaidTokens: false,
-        tokenBalance: 0,
-        freeTokens: 0,
-        paidTokens: 0
-      };
-    }
+    const userData = userDoc.data();
+    const tokensLimit = userData.tokensLimit || 0;
+    const tokensUsed = userData.tokensUsed || 0;
+    const tokenBalance = tokensLimit - tokensUsed;
+    const plan = userData.plan || 'free';
+    const isPremium = plan === 'premium' || plan === 'paid' || tokenBalance > 500000;
 
     const tierInfo: UserTierInfo = {
-      tier: data.tier as 'free' | 'premium',
-      isPremium: data.is_premium,
-      hasPaidTokens: data.has_paid_tokens,
-      tokenBalance: data.token_balance,
-      freeTokens: data.free_tokens,
-      paidTokens: data.paid_tokens
+      tier: isPremium ? 'premium' : 'free',
+      isPremium,
+      hasPaidTokens: tokenBalance > 100000,
+      tokenBalance,
+      freeTokens: isPremium ? 0 : tokenBalance,
+      paidTokens: isPremium ? tokenBalance : 0
     };
-
-    console.log('✅ [TierService] User tier info:', tierInfo);
 
     return tierInfo;
   } catch (err) {
     console.error('❌ [TierService] Exception getting user tier:', err);
-    return {
-      tier: 'free',
-      isPremium: false,
-      hasPaidTokens: false,
-      tokenBalance: 0,
-      freeTokens: 0,
-      paidTokens: 0
-    };
+    return getDefaultTierInfo();
   }
+}
+
+function getDefaultTierInfo(): UserTierInfo {
+  return {
+    tier: 'free',
+    isPremium: false,
+    hasPaidTokens: false,
+    tokenBalance: 0,
+    freeTokens: 0,
+    paidTokens: 0
+  };
 }
 
 export async function isUserPremium(userId: string): Promise<boolean> {

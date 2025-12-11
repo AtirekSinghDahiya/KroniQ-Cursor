@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Eye, Heart, Users, Award, Zap, Globe, Shield, Lightbulb, Code, Brain } from 'lucide-react';
 import { Floating3DCard, AnimatedGradientOrb } from './FloatingElements';
+import { MouseParticles } from './MouseParticles';
 
 export const AboutPage: React.FC = () => {
   const [mounted, setMounted] = useState(false);
@@ -62,13 +63,13 @@ export const AboutPage: React.FC = () => {
 
   const milestones = [
     { year: 'Sep 14, 2025', event: 'The Idea - Vision to democratize AI', icon: Zap },
-    { year: 'Sep 30, 2025', event: 'Built basic prototype and structure', icon: Award },
-    { year: 'Oct 25, 2025', event: 'First working prototype completed', icon: Users },
-    { year: 'Oct 27, 2025', event: 'Published and launched to the world', icon: Globe }
+    { year: 'Dec 7, 2025', event: 'Launched early bird waitlist for first 100 users', icon: Award },
+    { year: 'Dec 11, 2025', event: 'MVP Launch - Core features released', icon: Users },
   ];
 
   return (
     <div className="relative w-full pb-20">
+      <MouseParticles />
       <AnimatedGradientOrb className="top-40 right-10 w-96 h-96" />
       <AnimatedGradientOrb className="bottom-40 left-10 w-[500px] h-[500px]" />
 
@@ -76,12 +77,12 @@ export const AboutPage: React.FC = () => {
       <section className={`relative pt-40 pb-20 px-4 ${mounted ? 'animate-fade-in-up' : 'opacity-0'}`}>
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-block px-6 py-3 glass-panel rounded-full border border-white/20 mb-8">
-            <span className="text-[#00FFF0] text-sm font-bold tracking-wider">ABOUT KRONIQ</span>
+            <span className="text-[#EC4899] text-sm font-bold tracking-wider">ABOUT KRONIQ</span>
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black text-white mb-8 leading-[1.1] tracking-tight">
             Building the Future of{' '}
-            <span className="bg-gradient-to-r from-[#00FFF0] via-[#00D4FF] to-[#0099FF] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#EC4899] via-[#00D4FF] to-[#0099FF] bg-clip-text text-transparent">
               AI-Powered Creation
             </span>
           </h1>
@@ -96,9 +97,9 @@ export const AboutPage: React.FC = () => {
       <section className="relative py-20 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           <Floating3DCard delay={0}>
-            <div className="glass-panel rounded-3xl p-10 border border-white/20 hover:border-[#00FFF0]/50 transition-all duration-500 h-full">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00FFF0]/20 to-[#8A2BE2]/20 flex items-center justify-center mb-6">
-                <Target className="w-8 h-8 text-[#00FFF0]" />
+            <div className="glass-panel rounded-3xl p-10 border border-white/20 hover:border-[#EC4899]/50 transition-all duration-500 h-full">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#EC4899]/20 to-[#8B5CF6]/20 flex items-center justify-center mb-6">
+                <Target className="w-8 h-8 text-[#EC4899]" />
               </div>
               <h2 className="text-4xl font-black text-white mb-6 tracking-tight">Our Mission</h2>
               <p className="text-white/80 text-lg leading-relaxed font-light">
@@ -108,9 +109,9 @@ export const AboutPage: React.FC = () => {
           </Floating3DCard>
 
           <Floating3DCard delay={150}>
-            <div className="glass-panel rounded-3xl p-10 border border-white/20 hover:border-[#8A2BE2]/50 transition-all duration-500 h-full">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/20 to-[#00FFF0]/20 flex items-center justify-center mb-6">
-                <Eye className="w-8 h-8 text-[#8A2BE2]" />
+            <div className="glass-panel rounded-3xl p-10 border border-white/20 hover:border-[#8B5CF6]/50 transition-all duration-500 h-full">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8B5CF6]/20 to-[#EC4899]/20 flex items-center justify-center mb-6">
+                <Eye className="w-8 h-8 text-[#8B5CF6]" />
               </div>
               <h2 className="text-4xl font-black text-white mb-6 tracking-tight">Our Vision</h2>
               <p className="text-white/80 text-lg leading-relaxed font-light">
@@ -160,7 +161,7 @@ export const AboutPage: React.FC = () => {
 
           <div className="relative">
             {/* Timeline Line - Hidden on mobile */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#00FFF0] via-[#8A2BE2] to-[#00FFF0] transform -translate-x-1/2" />
+            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#EC4899] via-[#8B5CF6] to-[#EC4899] transform -translate-x-1/2" />
 
             <div className="space-y-8 md:space-y-16">
               {milestones.map((milestone, idx) => {
@@ -174,12 +175,12 @@ export const AboutPage: React.FC = () => {
                   >
                     <div className={`w-full md:w-5/12 ${isLeft ? 'md:text-right md:pr-8' : 'md:text-left md:pl-8'} px-4 md:px-0`}>
                       <Floating3DCard delay={idx * 100}>
-                        <div className="glass-panel rounded-2xl p-4 md:p-6 border border-white/20 hover:border-[#00FFF0]/50 transition-all duration-500">
+                        <div className="glass-panel rounded-2xl p-4 md:p-6 border border-white/20 hover:border-[#EC4899]/50 transition-all duration-500">
                           <div className={`flex items-center gap-3 mb-3 ${isLeft ? 'md:flex-row-reverse' : ''}`}>
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#00FFF0]/20 to-[#8A2BE2]/20 flex items-center justify-center flex-shrink-0">
-                              <Icon className="w-5 h-5 text-[#00FFF0]" />
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#EC4899]/20 to-[#8B5CF6]/20 flex items-center justify-center flex-shrink-0">
+                              <Icon className="w-5 h-5 text-[#EC4899]" />
                             </div>
-                            <span className="text-lg md:text-2xl font-bold text-[#00FFF0]">{milestone.year}</span>
+                            <span className="text-lg md:text-2xl font-bold text-[#EC4899]">{milestone.year}</span>
                           </div>
                           <p className="text-white/80 text-base md:text-lg break-words">{milestone.event}</p>
                         </div>
@@ -187,7 +188,7 @@ export const AboutPage: React.FC = () => {
                     </div>
 
                     {/* Center Dot - Hidden on mobile */}
-                    <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-br from-[#00FFF0] to-[#8A2BE2] border-4 border-slate-900 z-10" />
+                    <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] border-4 border-slate-900 z-10" />
 
                     <div className="hidden md:block w-5/12" />
                   </div>
@@ -212,10 +213,10 @@ export const AboutPage: React.FC = () => {
             {team.map((member, idx) => {
               return (
                 <Floating3DCard key={idx} delay={idx * 100}>
-                  <div className="glass-panel rounded-3xl p-8 border border-white/20 hover:border-[#00FFF0]/50 transition-all duration-500 text-center group h-full">
+                  <div className="glass-panel rounded-3xl p-8 border border-white/20 hover:border-[#EC4899]/50 transition-all duration-500 text-center group h-full">
                     <h3 className="text-2xl font-black text-white mb-2 tracking-tight">{member.name}</h3>
-                    <div className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-[#00FFF0]/20 to-[#0099FF]/20 border border-[#00FFF0]/30 mb-5">
-                      <p className="text-[#00FFF0] text-sm font-bold">{member.role}</p>
+                    <div className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-[#EC4899]/20 to-[#0099FF]/20 border border-[#EC4899]/30 mb-5">
+                      <p className="text-[#EC4899] text-sm font-bold">{member.role}</p>
                     </div>
                     <p className="text-white/70 text-sm leading-relaxed font-light">{member.bio}</p>
                   </div>

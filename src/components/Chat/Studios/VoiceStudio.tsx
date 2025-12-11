@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Mic, X, Loader, Download, Play, Pause, Sparkles, Upload,
+  Mic, X, Loader, Download, Play, Pause, Upload,
   Wand2, Volume2, Settings, History, FileAudio
 } from 'lucide-react';
 import { generateWithElevenLabs, ELEVENLABS_VOICES } from '../../../lib/elevenlabsTTSService';
@@ -271,7 +271,21 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
       }
 
       const modelCost = getModelCost('elevenlabs');
-      const tokensToDeduct = modelCost.costPerMessage;
+
+      // Calculate dynamic token cost - MINIMUM 1000 tokens for TTS generation
+      // TTS pricing is typically per character, so we use tokensPerMessage as base + text length
+      const baseTokens = Math.max(1000, Math.ceil(modelCost.tokensPerMessage * 0.1)); // Minimum 1000 tokens
+      const charCost = text.length * 2; // 2 tokens per character for TTS
+
+      const tokensToDeduct = baseTokens + charCost;
+
+      console.log('💰 Voice Token Calculation:', {
+        model: 'elevenlabs',
+        baseTokens,
+        chars: text.length,
+        charCost,
+        total: tokensToDeduct
+      });
 
       setProgress('Deducting tokens...');
       await deductTokensForRequest(
@@ -326,14 +340,14 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
     }
   };
 
-  const handleDownload = (audio: GeneratedAudio) => {
-    const link = document.createElement('a');
-    link.href = audio.url;
-    link.download = `${audio.title.replace(/[^a-z0-9]/gi, '_')}.mp3`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('success', 'Downloaded!', 'Audio file downloaded');
+  const handleDownload = async (audio: GeneratedAudio) => {
+    const { downloadAudio } = await import('../../../lib/downloadUtils');
+    const success = await downloadAudio(audio.url, audio.title);
+    if (success) {
+      showToast('success', 'Downloaded!', 'Audio saved to Downloads folder');
+    } else {
+      showToast('info', 'Opened in Browser', 'Right-click to save the audio');
+    }
   };
 
   const togglePlay = (index: number) => {
@@ -382,11 +396,6 @@ export const VoiceStudio: React.FC<VoiceStudioProps> = ({ onClose, projectId: in
               <Settings className="w-4 h-4" />
               <span>Documentation</span>
             </button>
-
-            <div className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-semibold">{tokenBalance.toLocaleString()}</span>
-            </div>
 
             <button
               onClick={onClose}

@@ -76,12 +76,10 @@ export async function getUnifiedPremiumStatus(userIdOverride?: string): Promise<
 
   const cached = cache.get(userId);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log('🔁 Returning cached premium status:', cached);
     return cached;
   }
 
   try {
-    console.log('📊 Fetching fresh premium status for:', userId);
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, user_type, paid_tokens_balance, tokens_balance, free_tokens_balance, is_premium, is_paid, current_tier')
@@ -99,7 +97,7 @@ export async function getUnifiedPremiumStatus(userIdOverride?: string): Promise<
       return createFreeStatus('no_profile');
     }
 
-    console.log('📦 Profile data:', profile);
+    // Profile data fetched
 
     const paidTokens = profile.paid_tokens_balance || 0;
     const totalTokens = profile.tokens_balance || 0;
@@ -111,17 +109,7 @@ export async function getUnifiedPremiumStatus(userIdOverride?: string): Promise<
     // Free users CANNOT access paid models even with 5M tokens
     const isPremium = (userType === 'paid');
 
-    console.log('💎 Premium calculation:', {
-      userType,
-      paidTokens,
-      totalTokens,
-      freeTokens: profile.free_tokens_balance,
-      is_premium: profile.is_premium,
-      is_paid: profile.is_paid,
-      current_tier: profile.current_tier,
-      result: isPremium,
-      logic: userType === 'paid' ? 'PAID_USER' : 'FREE_USER'
-    });
+    // Premium status calculated
 
     if (isPremium && paidTokens > 0) {
       await ensurePremiumFlagsSet(userId, paidTokens, profile.current_tier);
@@ -137,7 +125,7 @@ export async function getUnifiedPremiumStatus(userIdOverride?: string): Promise<
       timestamp: Date.now()
     };
 
-    console.log('✅ Final premium status:', status);
+    // Premium status determined
     cache.set(userId, status);
     return status;
 
@@ -289,8 +277,8 @@ export function subscribeToProfileChanges(
           table: 'profiles',
           filter: `id=eq.${userId}`
         },
-        async (payload) => {
-          console.log('📡 Profile changed:', payload);
+        async (_payload: unknown) => {
+          // Profile changed, refreshing status
 
           // Clear cache and fetch fresh status
           clearUnifiedCache(userId);

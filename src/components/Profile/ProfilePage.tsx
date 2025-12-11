@@ -134,9 +134,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-black/95 backdrop-blur-2xl rounded-3xl shadow-2xl border-2 border-[#00FFF0]/20 overflow-hidden animate-scale-in">
+      <div className="w-full max-w-md bg-black/95 backdrop-blur-2xl rounded-3xl shadow-2xl border-2 border-[#EC4899]/20 overflow-hidden animate-scale-in">
         {/* Header */}
-        <div className="relative p-6 border-b border-[#00FFF0]/10">
+        <div className="relative p-6 border-b border-[#EC4899]/10">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
@@ -151,7 +151,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
           {/* Profile Picture & Info */}
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00FFF0] to-[#8A2BE2] flex items-center justify-center shadow-lg border-2 border-[#00FFF0]/30 overflow-hidden">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] flex items-center justify-center shadow-lg border-2 border-[#EC4899]/30 overflow-hidden">
                 {photoURL ? (
                   <img src={photoURL} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -166,7 +166,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="absolute -bottom-1 -right-1 p-2 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 p-2 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
                 <Camera className="w-3 h-3 text-white" />
               </button>
@@ -189,7 +189,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
               </div>
               <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                 tier === 'premium'
-                  ? 'bg-gradient-to-r from-[#00FFF0]/20 to-[#8A2BE2]/20 border border-[#00FFF0]/50 text-[#00FFF0]'
+                  ? 'bg-gradient-to-r from-[#EC4899]/20 to-[#8B5CF6]/20 border border-[#EC4899]/50 text-[#EC4899]'
                   : 'bg-white/5 border border-white/10 text-white/70'
               }`}>
                 <Crown className="w-3 h-3" />
@@ -199,10 +199,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
           </div>
 
           {/* Token Balance Card */}
-          <div className="bg-gradient-to-br from-[#00FFF0]/10 to-[#8A2BE2]/10 border border-[#00FFF0]/20 rounded-2xl p-4">
+          <div className="bg-gradient-to-br from-[#EC4899]/10 to-[#8B5CF6]/10 border border-[#EC4899]/20 rounded-2xl p-4">
             <div className="flex items-center justify-between">
               <span className="text-white/70 text-sm">Token Balance</span>
-              <span className="text-2xl font-bold bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] bg-clip-text text-transparent">
                 {formatTokens(tokenBalance)}
               </span>
             </div>
@@ -217,7 +217,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/40 focus:outline-none focus:border-[#00FFF0]/50 transition-all"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/40 focus:outline-none focus:border-[#EC4899]/50 transition-all"
               placeholder="Enter your name"
             />
           </div>
@@ -229,7 +229,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
                 onClose();
                 navigateTo('settings');
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#00FFF0]/30 rounded-xl text-white transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#EC4899]/30 rounded-xl text-white transition-all"
             >
               <Settings className="w-4 h-4" />
               <span className="text-sm font-medium">Settings</span>
@@ -251,7 +251,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onClose }) => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#00FFF0]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#EC4899]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

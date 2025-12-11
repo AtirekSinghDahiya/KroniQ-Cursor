@@ -49,7 +49,7 @@ const contextConfig: Record<LoadingContext, {
 }> = {
   space: {
     icon: Rocket,
-    colors: 'from-blue-500 via-purple-500 to-pink-500',
+    colors: 'from-pink-500 via-purple-500 to-pink-500',
     particles: ['🌟', '✨', '🚀', '🌙', '⭐'],
     animation: 'animate-bounce',
     label: 'Launching into space...'
@@ -84,21 +84,21 @@ const contextConfig: Record<LoadingContext, {
   },
   ai: {
     icon: Brain,
-    colors: 'from-indigo-500 via-blue-500 to-cyan-500',
+    colors: 'from-purple-500 via-pink-500 to-cyan-500',
     particles: ['🤖', '🧠', '✨', '💡', '🔮'],
     animation: 'animate-pulse',
     label: 'AI is thinking...'
   },
   design: {
     icon: Palette,
-    colors: 'from-pink-500 via-purple-500 to-indigo-500',
+    colors: 'from-pink-500 via-purple-500 to-purple-500',
     particles: ['🎨', '✨', '🌈', '💫', '🎭'],
     animation: 'animate-pulse',
     label: 'Designing...'
   },
   document: {
     icon: FileText,
-    colors: 'from-blue-500 via-indigo-500 to-purple-500',
+    colors: 'from-pink-500 via-purple-500 to-purple-500',
     particles: ['📄', '✍️', '📝', '📋', '📑'],
     animation: 'animate-pulse',
     label: 'Creating document...'

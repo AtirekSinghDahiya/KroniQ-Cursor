@@ -8,10 +8,15 @@ import {
   GoogleAuthProvider,
   User
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { supabase } from '../lib/supabaseClient';
+import { auth, db } from '../lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import {
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile as updateFirestoreProfile,
+  type UserProfile
+} from '../lib/firestoreService';
 import { clearUnifiedCache } from '../lib/unifiedPremiumAccess';
-import { PromoService } from '../lib/promoService';
 
 interface UserData {
   id: string;
@@ -30,6 +35,7 @@ interface UserData {
   aiResponseLength?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  lastTokenResetAt?: Date; // Tracks when tokens were last reset/renewed
 }
 
 interface AuthContextType {
@@ -37,6 +43,8 @@ interface AuthContextType {
   user: User | null;
   userData: UserData | null;
   loading: boolean;
+  earlyAdopterBonus: number | null; // Set when user just got early adopter bonus
+  clearEarlyAdopterBonus: () => void;
   signUp: (email: string, password: string, displayName?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -58,10 +66,20 @@ export const useAuth = () => {
 const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const SESSION_KEY = 'kroniq_session_timestamp';
 
+// Token bonus configuration
+// First 106 users get 300k tokens (100k base + 200k early adopter bonus)
+// Users after 106 get 100k tokens
+const EARLY_ADOPTER_LIMIT = 106;
+const EARLY_ADOPTER_TOKENS = 300000; // 300k for first 106 users
+const BASE_TOKENS = 100000;          // 100k for everyone after 106
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [earlyAdopterBonus, setEarlyAdopterBonus] = useState<number | null>(null);
+
+  const clearEarlyAdopterBonus = () => setEarlyAdopterBonus(null);
 
   const updateSessionTimestamp = () => {
     localStorage.setItem(SESSION_KEY, Date.now().toString());
@@ -79,186 +97,138 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(SESSION_KEY);
   };
 
-  const ensureTokenBalance = async (userId: string) => {
-    try {
-      // Check if profile exists and has tokens
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tokens_balance, free_tokens_balance, paid_tokens_balance, current_tier, created_at')
-        .eq('id', userId)
-        .maybeSingle();
+  // Convert Firestore profile to UserData
+  const profileToUserData = (profile: UserProfile): UserData => ({
+    id: profile.id,
+    email: profile.email,
+    displayName: profile.displayName || undefined,
+    photoURL: profile.photoURL || undefined,
+    plan: profile.plan,
+    tokensUsed: profile.tokensUsed,
+    tokensLimit: profile.tokensLimit,
+    aiPersonality: profile.aiPersonality,
+    aiCreativityLevel: profile.aiCreativityLevel,
+    aiResponseLength: profile.aiResponseLength,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+  });
 
-      if (profile) {
-        // Only log token status, database trigger handles initialization
-        console.log('✅ User token status:', {
-          userId,
-          total: profile.tokens_balance,
-          free: profile.free_tokens_balance,
-          paid: profile.paid_tokens_balance,
-          tier: profile.current_tier
-        });
-
-        // "Second Chance" Logic: If user has exactly 150k (default) and was created recently, try to give the bonus
-        // This fixes the issue where the initial creation hook might have missed the promo
-        if (profile.tokens_balance <= 150000 && profile.current_tier === 'free') {
-          console.log('🎁 Checking for missed "FIRST100" 5M token bonus...');
-
-          // We'll delay slightly to ensure we don't race with the initial trigger if this is a fresh signup
-          setTimeout(async () => {
-            try {
-              const hasRedeemed = await PromoService.hasUserRedeemedCampaign(userId, 'FIRST100');
-              if (!hasRedeemed) {
-                console.log('⚠️ User missed FIRST100 bonus on signup. Attempting to redeem now...');
-                const campaignStatus = await PromoService.checkCampaignStatus('FIRST100');
-
-                if (campaignStatus.isValid && campaignStatus.remainingSlots > 0) {
-                  const redemption = await PromoService.redeemPromoCode(userId, 'FIRST100');
-                  if (redemption.success) {
-                    console.log(`🎉 REQUIRED FIX: Awarded ${redemption.tokensAwarded.toLocaleString()} tokens via Second Chance!`);
-                    // Force refresh user data to update UI
-                    await refreshUserData();
-                  } else {
-                    console.error('❌ Failed Second Chance redemption:', redemption.message);
-                  }
-                } else {
-                  console.log('ℹ️ FIRST100 Campaign unavailable for Second Chance:', campaignStatus.message);
-                }
-              } else {
-                console.log('✅ User already redeemed FIRST100.');
-              }
-            } catch (err) {
-              console.error('❌ Error in Second Chance logic:', err);
-            }
-          }, 3000);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking token balance:', error);
+  // Calculate tokens for new user based on signup order
+  const calculateInitialTokens = (userCount: number): number => {
+    if (userCount < EARLY_ADOPTER_LIMIT) {
+      return EARLY_ADOPTER_TOKENS;
+    } else {
+      return BASE_TOKENS;
     }
   };
 
-  const createSupabaseProfile = async (userId: string, email: string, displayName?: string) => {
+  const createProfile = async (userId: string, email: string, displayName?: string) => {
     try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, tokens_balance, free_tokens_balance, paid_tokens_balance')
-        .eq('id', userId)
-        .maybeSingle();
-
+      // Check if profile already exists in Firestore
+      const existingProfile = await getUserProfile(userId);
       if (existingProfile) {
-        console.log('✅ Profile already exists for user:', userId);
-        await ensureTokenBalance(userId);
+        setUserData(profileToUserData(existingProfile));
         return;
       }
 
-      console.log('🆕 Creating new profile for user:', userId);
-      console.log('ℹ️ Database trigger will handle token initialization (150k base + first 101 bonus if applicable)');
+      // Also check Supabase for existing profile (for migrated users)
+      // This prevents showing early adopter modal for users with existing accounts
+      let hasExistingSupabaseProfile = false;
+      try {
+        const { supabase } = await import('../lib/supabaseClient');
+        const { data: supabaseProfile } = await supabase
+          .from('profiles')
+          .select('id, tokens_balance, paid_tokens_balance')
+          .eq('id', userId)
+          .maybeSingle();
 
-      // Create profile with minimal data - database trigger handles all token initialization
-      const result = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email,
-          display_name: displayName || email.split('@')[0],
-          avatar_url: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (result.error) {
-        console.error('❌ Error creating profile:', result.error);
-        throw result.error;
+        if (supabaseProfile) {
+          hasExistingSupabaseProfile = true;
+          // If user has significant tokens in Supabase, they're definitely not new
+          const existingTokens = (supabaseProfile.tokens_balance || 0) + (supabaseProfile.paid_tokens_balance || 0);
+          if (existingTokens > EARLY_ADOPTER_TOKENS) {
+            // User already has more tokens than early adopter bonus - don't show modal
+            const profile = await createUserProfile(
+              userId,
+              email,
+              displayName || null,
+              null,
+              existingTokens // Use their existing token count
+            );
+            setUserData(profileToUserData(profile));
+            return; // Don't show early adopter modal
+          }
+        }
+      } catch (supabaseError) {
+        // Supabase check failed, continue with normal flow
       }
 
-      console.log('✅ Profile created successfully');
+      // Creating new profile for user
 
-      // Check token allocation immediately (trigger runs synchronously)
-      await ensureTokenBalance(userId);
+      // Query current user count from Firebase to determine token allocation
+      let currentUserCount = 0;
+      try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        currentUserCount = usersSnapshot.size;
+      } catch (countError) {
+        console.error('⚠️ Error counting users, defaulting to base tokens:', countError);
+      }
 
-      // Automatically try to redeem FIRST100 promo for new users (separate from first 101 bonus)
-      setTimeout(async () => {
-        try {
-          console.log('🎁 Checking FIRST100 promo eligibility for new user:', userId);
+      // Calculate tokens based on user count (first 106 get 300k, rest get 100k)
+      const initialTokens = calculateInitialTokens(currentUserCount);
+      const isEarlyAdopter = currentUserCount < EARLY_ADOPTER_LIMIT && !hasExistingSupabaseProfile;
 
-          const campaignStatus = await PromoService.checkCampaignStatus('FIRST100');
-          console.log('📊 FIRST100 campaign status:', campaignStatus);
+      const profile = await createUserProfile(
+        userId,
+        email,
+        displayName || null,
+        null,
+        initialTokens
+      );
 
-          if (campaignStatus.isValid && campaignStatus.remainingSlots > 0) {
-            const redemption = await PromoService.redeemPromoCode(userId, 'FIRST100', email);
-            console.log('🎁 FIRST100 redemption result:', redemption);
+      setUserData(profileToUserData(profile));
 
-            if (redemption.success) {
-              console.log(`✅ SUCCESS! Awarded ${redemption.tokensAwarded.toLocaleString()} tokens from FIRST100 promo!`);
-            } else {
-              console.log(`ℹ️ FIRST100 promo: ${redemption.message}`);
-            }
-          } else {
-            console.log(`ℹ️ FIRST100 campaign not available: ${campaignStatus.message}`);
-          }
-        } catch (promoError) {
-          console.error('❌ Error auto-redeeming FIRST100 promo:', promoError);
-        }
-      }, 2000);
+      // Trigger early adopter welcome modal ONLY for truly new users
+      if (isEarlyAdopter && !hasExistingSupabaseProfile) {
+        setEarlyAdopterBonus(initialTokens);
+      }
     } catch (error) {
-      console.error('❌ Error in createSupabaseProfile:', error);
-      throw error;
-    }
-  };
-
-  const createDefaultProfile = async (userId: string, email: string, displayName?: string) => {
-    const profileData: UserData = {
-      id: userId,
-      email,
-      displayName: displayName || '',
-      photoURL: '',
-      bio: '',
-      location: '',
-      phone: '',
-      plan: 'starter',
-      tokensUsed: 0,
-      tokensLimit: 10000,
-      aiPersonality: 'balanced',
-      aiCreativityLevel: 5,
-      aiResponseLength: 'medium',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    try {
-      await createSupabaseProfile(userId, email, displayName);
-      setUserData(profileData);
-    } catch (error) {
+      console.error('❌ Error creating profile:', error);
       throw error;
     }
   };
 
   const fetchUserData = async (userId: string, email: string) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
+      const profile = await getUserProfile(userId);
 
       if (profile) {
-        setUserData({
-          id: profile.id,
-          email: profile.email,
-          displayName: profile.display_name,
-          photoURL: profile.photo_url,
-          bio: profile.bio,
-          birthday: profile.birthday,
-          location: profile.location,
-          phone: profile.phone,
-          plan: profile.current_tier,
-        });
+        // Check for monthly token reset
+        try {
+          const { checkAndResetTokens } = await import('../lib/tokenResetService');
+          const resetResult = await checkAndResetTokens(userId);
+
+          if (resetResult?.wasReset && !resetResult.isPaidUser) {
+            // Tokens were reset for free user
+            // Refetch profile to get updated token values
+            const updatedProfile = await getUserProfile(userId);
+            if (updatedProfile) {
+              setUserData(profileToUserData(updatedProfile));
+              return;
+            }
+          }
+        } catch (resetError) {
+          console.error('⚠️ [Auth] Token reset check failed:', resetError);
+          // Continue with original profile data even if reset check fails
+        }
+
+        setUserData(profileToUserData(profile));
       } else {
-        await createDefaultProfile(userId, email);
+        await createProfile(userId, email);
       }
     } catch (error) {
+      console.error('Error fetching user data:', error);
       setUserData(null);
     }
   };
@@ -275,10 +245,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       clearUnifiedCache(userCredential.user.uid);
-      await createDefaultProfile(userCredential.user.uid, email, displayName);
+      await createProfile(userCredential.user.uid, email, displayName);
+      updateSessionTimestamp();
     } catch (error: any) {
-
-      // Translate Firebase error codes to user-friendly messages
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('This email is already registered. Please sign in instead.');
       } else if (error.code === 'auth/invalid-email') {
@@ -290,14 +259,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === 'auth/network-request-failed') {
         throw new Error('Network error. Please check your internet connection.');
       }
-
       throw error;
     }
   };
 
   const signInWithGoogle = async () => {
     try {
-      console.log('🔵 Starting Google sign in...');
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account'
@@ -306,23 +273,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userCredential = await signInWithPopup(auth, provider);
       const user = userCredential.user;
 
-      console.log('✅ Google sign in successful:', user.email);
+      // Google sign in successful
       updateSessionTimestamp();
       clearUnifiedCache(user.uid);
 
       // Check if profile exists, create if not
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.uid)
-        .maybeSingle();
+      const existingProfile = await getUserProfile(user.uid);
 
       if (!existingProfile) {
-        console.log('📝 Creating profile for Google user...');
-        await createDefaultProfile(user.uid, user.email!, user.displayName || undefined);
+        // Creating profile for Google user
+        await createProfile(user.uid, user.email!, user.displayName || undefined);
+      } else {
+        setUserData(profileToUserData(existingProfile));
       }
-
-      await fetchUserData(user.uid, user.email!);
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
 
@@ -350,8 +313,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateSessionTimestamp();
       clearUnifiedCache(userCredential.user.uid);
     } catch (error: any) {
-
-      // Translate Firebase error codes to user-friendly messages
       if (error.code === 'auth/user-not-found') {
         throw new Error('No account found with this email. Please sign up first.');
       } else if (error.code === 'auth/wrong-password') {
@@ -365,7 +326,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === 'auth/invalid-credential') {
         throw new Error('Invalid email or password. Please try again.');
       }
-
       throw error;
     }
   };
@@ -387,35 +347,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const supabaseData: any = {};
-      if (data.displayName) supabaseData.display_name = data.displayName;
-      if (data.photoURL) supabaseData.photo_url = data.photoURL;
-      if (data.bio) supabaseData.bio = data.bio;
-      if (data.birthday) supabaseData.birthday = data.birthday;
-      if (data.location) supabaseData.location = data.location;
-      if (data.phone) supabaseData.phone = data.phone;
+      const firestoreUpdates: Partial<UserProfile> = {};
+      if (data.displayName !== undefined) firestoreUpdates.displayName = data.displayName || null;
+      if (data.photoURL !== undefined) firestoreUpdates.photoURL = data.photoURL || null;
+      if (data.aiPersonality !== undefined) firestoreUpdates.aiPersonality = data.aiPersonality;
+      if (data.aiCreativityLevel !== undefined) firestoreUpdates.aiCreativityLevel = data.aiCreativityLevel;
+      if (data.aiResponseLength !== undefined) firestoreUpdates.aiResponseLength = data.aiResponseLength;
 
-      supabaseData.updated_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(supabaseData)
-        .eq('id', currentUser.uid);
-
-      if (error) throw error;
-
+      await updateFirestoreProfile(currentUser.uid, firestoreUpdates);
       setUserData(prev => prev ? { ...prev, ...data } : null);
     } catch (error: any) {
-
-      if (error.code === 'PGRST116') {
-        throw new Error('Profile not found. Please contact support.');
-      } else if (error.code === 'unavailable') {
-        throw new Error('Network error. Please check your internet connection.');
-      } else if (error.code === 'not-found') {
-        throw new Error('Profile not found. Try signing out and back in.');
-      } else {
-        throw new Error(error.message || 'Failed to update profile. Please try again.');
-      }
+      throw new Error(error.message || 'Failed to update profile. Please try again.');
     }
   };
 
@@ -472,6 +414,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user: currentUser,
     userData,
     loading,
+    earlyAdopterBonus,
+    clearEarlyAdopterBonus,
     signUp,
     signIn,
     signInWithGoogle,

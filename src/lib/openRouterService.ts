@@ -26,48 +26,23 @@ const SITE_URL = 'https://kroniq.ai';
 const SITE_NAME = 'KroniQ AI Platform';
 
 const MODEL_MAP: Record<string, string> = {
-  // Custom Model IDs mapped to OpenRouter format
-  'gpt-5-chat': 'openai/gpt-5-chat',
-  'gpt-5-codex': 'openai/gpt-5-codex',
-  'codex-mini': 'openai/codex-mini',
-  'deepseek-v3.2': 'deepseek/deepseek-v3.2-exp',
-  'deepseek-v3.1-free': 'deepseek/deepseek-chat-v3.1:free',
-  'nemotron-super': 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
-  'nemotron-nano-free': 'nvidia/nemotron-nano-9b-v2:free',
-  'qwen-vl-32b': 'qwen/qwen3-vl-32b-instruct',
-  'qwen-vl-30b-free': 'qwen/qwen3-vl-30b-a3b-thinking',
-  'qwen3-vl-30b-free': 'qwen/qwen3-vl-30b-a3b-thinking',
+  // Simplified model mappings - most models use direct OpenRouter IDs
+  'claude-3.5-sonnet': 'anthropic/claude-3.5-sonnet',
   'claude-3-haiku': 'anthropic/claude-3-haiku',
-  'claude-haiku-4.5': 'anthropic/claude-haiku-4.5',
-  'claude-sonnet': 'anthropic/claude-sonnet-4.5',
-  'claude-opus-4': 'anthropic/claude-opus-4',
-  'claude-opus-4.1': 'anthropic/claude-opus-4.1',
-  'gemini-flash-image': 'google/gemini-2.5-flash-image',
-  'gemini-flash-lite-free': 'google/gemini-2.5-flash-lite-preview-09-2025',
-  'kimi-k2': 'moonshotai/kimi-k2-0905:exacto',
-  'kimi-k2-0905': 'moonshotai/kimi-k2-0905',
-  'kimi-k2-free': 'moonshotai/kimi-k2:free',
-  'llama-4-maverick': 'meta-llama/llama-4-maverick',
-  'llama-4-maverick-free': 'meta-llama/llama-4-maverick:free',
-  'grok-4-fast': 'x-ai/grok-4-fast',
-  'lfm2-8b': 'liquid/lfm2-8b-a1b',
-  'granite-4.0': 'ibm-granite/granite-4.0-h-micro',
-  'ernie-4.5': 'baidu/ernie-4.5-21b-a3b-thinking',
-  'glm-4.6': 'z-ai/glm-4.6',
+  'grok-2': 'x-ai/grok-2',
+  'grok-2-vision': 'x-ai/grok-2-vision-1212',
   'perplexity-sonar': 'perplexity/sonar',
-  'perplexity-sonar-pro': 'perplexity/sonar-pro',
-  'perplexity-sonar-reasoning': 'perplexity/sonar-reasoning-pro',
-  'perplexity-sonar-deep': 'perplexity/sonar-deep-research',
+  'perplexity-sonar-reasoning': 'perplexity/sonar-reasoning',
 };
 
-function log(level: 'info' | 'success' | 'error', message: string) {
-  const emoji = { info: '🔵', success: '✅', error: '❌' }[level];
+function log(level: 'info' | 'success' | 'error' | 'warning', message: string) {
+  const emoji = { info: '🔵', success: '✅', error: '❌', warning: '⚠️' }[level];
   console.log(`${emoji} [OpenRouter] ${message}`);
 }
 
 /**
- * Call OpenRouter API with the selected model
- */
+   * Call OpenRouter API with the selected model
+   */
 export async function callOpenRouter(
   messages: Message[],
   modelId: string
@@ -79,7 +54,7 @@ export async function callOpenRouter(
   // If modelId already contains a slash, it's already in OpenRouter format
   const openRouterModel = modelId.includes('/')
     ? modelId
-    : (MODEL_MAP[modelId] || MODEL_MAP['grok-4-fast'] || 'x-ai/grok-4-fast');
+    : (MODEL_MAP[modelId] || 'anthropic/claude-3.5-sonnet-20241022');
 
   log('info', `Calling model: ${openRouterModel} (requested: ${modelId})`);
   log('info', `API Key length: ${OPENROUTER_API_KEY.length}`);
@@ -225,7 +200,7 @@ export async function getOpenRouterResponse(
   userMessage: string,
   conversationHistory: Message[] = [],
   systemPrompt?: string,
-  selectedModel: string = 'grok-4-fast'
+  selectedModel: string = 'anthropic/claude-3.5-sonnet-20241022'
 ): Promise<string> {
   log('info', `Getting response for model: ${selectedModel}`);
   log('info', `History length: ${conversationHistory.length}`);
@@ -253,7 +228,7 @@ export async function getOpenRouterResponseWithUsage(
   userMessage: string,
   conversationHistory: Message[] = [],
   systemPrompt?: string,
-  selectedModel: string = 'grok-4-fast'
+  selectedModel: string = 'anthropic/claude-3.5-sonnet-20241022'
 ): Promise<AIResponse> {
   log('info', `Getting response for model: ${selectedModel}`);
   log('info', `History length: ${conversationHistory.length}`);

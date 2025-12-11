@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, MessageSquare, MapPin, Send, Check } from 'lucide-react';
 import { Floating3DCard, AnimatedGradientOrb } from './FloatingElements';
-import { submitForm } from '../../lib/formTrackingService';
-import { useAuth } from '../../contexts/AuthContext';
+import { MouseParticles } from './MouseParticles';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export const ContactPage: React.FC = () => {
-  const { currentUser } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -27,19 +27,21 @@ export const ContactPage: React.FC = () => {
     setError('');
 
     try {
-      const userId = currentUser?.uid || 'anonymous';
-      const result = await submitForm(userId, 'contact', formData);
+      // Save to Firebase Firestore
+      const contactRef = collection(db, 'contact_submissions');
+      await addDoc(contactRef, {
+        ...formData,
+        createdAt: serverTimestamp(),
+        status: 'pending',
+        userAgent: navigator.userAgent,
+      });
 
-      if (result.success) {
-        console.log('✅ Contact form submitted successfully:', result.id);
-        setSubmitted(true);
-        setTimeout(() => {
-          setSubmitted(false);
-          setFormData({ name: '', email: '', subject: '', message: '' });
-        }, 3000);
-      } else {
-        setError(result.error || 'Failed to submit form. Please try again.');
-      }
+      console.log('✅ Contact form submitted to Firebase');
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      }, 3000);
     } catch (err) {
       console.error('Error submitting contact form:', err);
       setError('Failed to submit form. Please try again.');
@@ -78,6 +80,7 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="relative w-full pb-20">
+      <MouseParticles />
       <AnimatedGradientOrb className="top-40 right-10 w-96 h-96" />
       <AnimatedGradientOrb className="bottom-40 left-10 w-[500px] h-[500px]" />
 
@@ -85,12 +88,12 @@ export const ContactPage: React.FC = () => {
       <section className={`relative pt-40 pb-20 px-4 ${mounted ? 'animate-fade-in-up' : 'opacity-0'}`}>
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-block px-6 py-3 glass-panel rounded-full border border-white/20 mb-8">
-            <span className="text-[#00FFF0] text-sm font-bold tracking-wider">CONTACT US</span>
+            <span className="text-[#EC4899] text-sm font-bold tracking-wider">CONTACT US</span>
           </div>
 
           <h1 className="text-6xl md:text-7xl font-bold text-white mb-8 leading-tight">
             Let's{' '}
-            <span className="bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] bg-clip-text text-transparent">
               Connect
             </span>
           </h1>
@@ -109,12 +112,12 @@ export const ContactPage: React.FC = () => {
               const Icon = info.icon;
               return (
                 <Floating3DCard key={idx} delay={idx * 100}>
-                  <div className="glass-panel rounded-2xl p-8 border border-white/20 hover:border-[#00FFF0]/50 transition-all duration-500 text-center group">
-                    <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#00FFF0]/20 to-[#8A2BE2]/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <Icon className="w-8 h-8 text-[#00FFF0]" />
+                  <div className="glass-panel rounded-2xl p-8 border border-white/20 hover:border-[#EC4899]/50 transition-all duration-500 text-center group">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#EC4899]/20 to-[#8B5CF6]/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-8 h-8 text-[#EC4899]" />
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">{info.title}</h3>
-                    <p className="text-[#00FFF0] font-semibold mb-2">{info.content}</p>
+                    <p className="text-[#EC4899] font-semibold mb-2">{info.content}</p>
                     <p className="text-white/60 text-sm">{info.description}</p>
                   </div>
                 </Floating3DCard>
@@ -144,7 +147,7 @@ export const ContactPage: React.FC = () => {
                           value={formData.name}
                           onChange={handleChange}
                           required
-                          className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#00FFF0]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
+                          className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#EC4899]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
                           placeholder="John Doe"
                         />
                       </div>
@@ -159,7 +162,7 @@ export const ContactPage: React.FC = () => {
                           value={formData.email}
                           onChange={handleChange}
                           required
-                          className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#00FFF0]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
+                          className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#EC4899]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
                           placeholder="john@example.com"
                         />
                       </div>
@@ -175,7 +178,7 @@ export const ContactPage: React.FC = () => {
                         value={formData.subject}
                         onChange={handleChange}
                         required
-                        className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#00FFF0]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
+                        className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#EC4899]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none transition-all duration-300"
                         placeholder="How can we help you?"
                       />
                     </div>
@@ -190,7 +193,7 @@ export const ContactPage: React.FC = () => {
                         onChange={handleChange}
                         required
                         rows={6}
-                        className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#00FFF0]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none resize-none transition-all duration-300"
+                        className="w-full px-6 py-4 glass-panel border border-white/20 focus:border-[#EC4899]/50 rounded-2xl text-white placeholder-white/40 focus:outline-none resize-none transition-all duration-300"
                         placeholder="Tell us more about your inquiry..."
                       />
                     </div>
@@ -204,7 +207,7 @@ export const ContactPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-full bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white px-8 py-5 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-[#00FFF0]/40 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      className="w-full bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white px-8 py-5 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-[#EC4899]/40 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       {submitting ? (
                         <>
@@ -225,8 +228,8 @@ export const ContactPage: React.FC = () => {
                   </form>
                 ) : (
                   <div className="text-center py-20 animate-fade-in">
-                    <div className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#00FFF0]/20 to-[#8A2BE2]/20 flex items-center justify-center animate-scale-in">
-                      <Check className="w-12 h-12 text-[#00FFF0]" />
+                    <div className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#EC4899]/20 to-[#8B5CF6]/20 flex items-center justify-center animate-scale-in">
+                      <Check className="w-12 h-12 text-[#EC4899]" />
                     </div>
                     <h3 className="text-4xl font-bold text-white mb-4">Message Sent!</h3>
                     <p className="text-xl text-white/70">

@@ -9,7 +9,7 @@ import { PricingModal } from '../Pages/PricingModal';
 import { HelpModal } from '../Pages/HelpModal';
 import { CareersModal } from '../Pages/CareersModal';
 import { CustomSolutionsModal } from '../Pages/CustomSolutionsModal';
-import { DraggableProfileButton } from '../Common/DraggableProfileButton';
+import { DraggableProfileButton } from '../Common/DraggableProfileButton2';
 
 interface FloatingNavbarProps {
   onProfileOpen?: () => void;
@@ -45,7 +45,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
     <>
       <nav className="flex fixed top-0 left-0 right-0 z-30 items-center justify-center pt-2 md:pt-6 px-2 md:px-4">
         <div className="relative group w-full max-w-5xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#00FFF0]/20 via-[#8A2BE2]/20 to-[#00FFF0]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#EC4899]/20 via-[#8B5CF6]/20 to-[#EC4899]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative glass-panel rounded-full px-3 md:px-8 py-2 md:py-3.5 shadow-2xl border border-white/20 backdrop-blur-2xl animate-fade-in-up hover:border-white/30 transition-all duration-300">
             <div className="flex items-center justify-center gap-2 md:gap-8 overflow-x-auto scrollbar-none">
               <button
@@ -54,7 +54,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <Home className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Home</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowFeatures(true)}
@@ -62,7 +62,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <Lightbulb className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Features</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowPricing(true)}
@@ -70,7 +70,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <DollarSign className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Pricing</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowDocs(true)}
@@ -78,7 +78,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <BookOpen className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Docs</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowCareers(true)}
@@ -86,7 +86,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <Briefcase className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Careers</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowCustomSolutions(true)}
@@ -94,7 +94,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <Building2 className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Enterprise</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
               <button
                 onClick={() => setShowHelp(true)}
@@ -102,7 +102,7 @@ export const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ onProfileOpen })
               >
                 <HelpCircle className="w-4 h-4 transition-transform group-hover/item:rotate-12" />
                 <span className="hidden sm:inline">Help</span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] group-hover/item:w-full transition-all duration-300" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] group-hover/item:w-full transition-all duration-300" />
               </button>
             </div>
           </div>

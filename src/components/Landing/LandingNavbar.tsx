@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
 
 interface LandingNavbarProps {
   currentPage: 'home' | 'about' | 'pricing' | 'contact' | 'services' | 'careers' | 'docs';
@@ -9,7 +8,6 @@ interface LandingNavbarProps {
 }
 
 export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNavigate, onGetStarted }) => {
-  const { theme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -33,17 +31,16 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNav
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 px-4 py-4 transition-all duration-500 ${
-      isScrolled ? 'py-3' : 'py-5'
-    }`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 px-4 py-4 transition-all duration-500 ${isScrolled ? 'py-3' : 'py-5'
+      }`}>
       <div className="max-w-7xl mx-auto">
         <div className="relative group">
-          <div className={`absolute inset-0 bg-gradient-to-r from-[#00FFF0]/20 via-[#8A2BE2]/20 to-[#00FFF0]/20 rounded-full blur-xl transition-opacity duration-500 ${
-            isScrolled ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`} />
-          <div className={`relative glass-panel rounded-full px-6 md:px-8 py-3 shadow-2xl border border-white/20 backdrop-blur-2xl transition-all duration-300 ${
-            isScrolled ? 'bg-slate-900/90' : 'bg-slate-900/40'
-          }`}>
+          <div className={`absolute inset-0 bg-gradient-to-r from-[#EC4899]/20 via-[#8B5CF6]/20 to-[#EF4444]/20 rounded-full blur-xl transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`} />
+          <div className={`relative rounded-full px-6 md:px-8 py-3 shadow-2xl backdrop-blur-2xl transition-all duration-500 ${isScrolled
+            ? 'bg-slate-900/95 border border-[#EC4899]/30 shadow-[0_0_30px_rgba(236,72,153,0.15)]'
+            : 'bg-gradient-to-r from-slate-900/60 via-purple-900/40 to-slate-900/60 border border-white/10 hover:border-[#8B5CF6]/40 hover:shadow-[0_0_40px_rgba(139,92,246,0.2)]'
+            }`}>
             <div className="flex items-center justify-between">
               <button
                 onClick={() => onNavigate('home')}
@@ -65,18 +62,16 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNav
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id as any)}
-                    className={`relative text-sm font-medium transition-all duration-300 group/nav ${
-                      currentPage === item.id
-                        ? 'text-white'
-                        : 'text-white/70 hover:text-white'
-                    }`}
+                    className={`relative text-sm font-medium transition-all duration-300 group/nav ${currentPage === item.id
+                      ? 'text-white'
+                      : 'text-white/70 hover:text-white'
+                      }`}
                   >
                     {item.label}
-                    <span className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] transition-all duration-300 ${
-                      currentPage === item.id
-                        ? 'w-full'
-                        : 'w-0 group-hover/nav:w-full'
-                    }`} />
+                    <span className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] transition-all duration-300 ${currentPage === item.id
+                      ? 'w-full'
+                      : 'w-0 group-hover/nav:w-full'
+                      }`} />
                   </button>
                 ))}
               </div>
@@ -84,7 +79,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNav
               <div className="flex items-center gap-4">
                 <button
                   onClick={onGetStarted}
-                  className="hidden sm:block bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-[#00FFF0]/30 transition-all duration-300 hover:scale-105"
+                  className="hidden sm:block bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-[#EC4899]/30 transition-all duration-300 hover:scale-105"
                 >
                   Get Started
                 </button>
@@ -114,11 +109,10 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNav
                     onNavigate(item.id as any);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`text-left py-3 px-4 rounded-xl transition-all duration-300 ${
-                    currentPage === item.id
-                      ? 'bg-gradient-to-r from-[#00FFF0]/20 to-[#8A2BE2]/20 text-white border border-[#00FFF0]/30'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
+                  className={`text-left py-3 px-4 rounded-xl transition-all duration-300 ${currentPage === item.id
+                    ? 'bg-gradient-to-r from-[#EC4899]/20 to-[#8B5CF6]/20 text-white border border-[#EC4899]/30'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -128,7 +122,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ currentPage, onNav
                   onGetStarted();
                   setIsMobileMenuOpen(false);
                 }}
-                className="bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#00FFF0]/30 transition-all duration-300"
+                className="bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#EC4899]/30 transition-all duration-300"
               >
                 Get Started
               </button>

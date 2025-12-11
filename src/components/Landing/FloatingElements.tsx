@@ -45,7 +45,7 @@ export const FloatingElements: React.FC = () => {
 
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 255, 240, ${particle.opacity})`;
+        ctx.fillStyle = `rgba(233, 30, 99, ${particle.opacity})`;
         ctx.fill();
 
         particles.forEach((otherParticle, otherIndex) => {
@@ -58,7 +58,7 @@ export const FloatingElements: React.FC = () => {
               ctx.beginPath();
               ctx.moveTo(particle.x, particle.y);
               ctx.lineTo(otherParticle.x, otherParticle.y);
-              ctx.strokeStyle = `rgba(0, 255, 240, ${0.1 * (1 - distance / 150)})`;
+              ctx.strokeStyle = `rgba(233, 30, 99, ${0.1 * (1 - distance / 150)})`;
               ctx.lineWidth = 0.5;
               ctx.stroke();
             }
@@ -109,8 +109,8 @@ export const AnimatedGradientOrb: React.FC<{ className?: string }> = ({ classNam
   return (
     <div className={`absolute ${className} pointer-events-none`}>
       <div className="relative w-full h-full will-change-transform">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00FFF0]/30 to-[#8A2BE2]/30 rounded-full blur-3xl animate-pulse-slow" style={{ transform: 'translateZ(0)' }} />
-        <div className="absolute inset-0 bg-gradient-to-tl from-[#8A2BE2]/20 to-[#00FFF0]/20 rounded-full blur-2xl animate-spin-slow" style={{ transform: 'translateZ(0)' }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#EC4899]/30 to-[#EC4899]/30 rounded-full blur-3xl animate-pulse-slow" style={{ transform: 'translateZ(0)' }} />
+        <div className="absolute inset-0 bg-gradient-to-tl from-[#8B5CF6]/20 to-[#FF6B35]/20 rounded-full blur-2xl animate-spin-slow" style={{ transform: 'translateZ(0)' }} />
       </div>
     </div>
   );

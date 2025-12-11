@@ -14,6 +14,7 @@ import { UnifiedStudioChat } from './components/Chat/UnifiedStudioChat';
 import { AudioStudio } from './components/Chat/AudioStudio';
 import { ImageStudio } from './components/Chat/Studios/ImageStudio';
 import { VideoStudio } from './components/Chat/Studios/VideoStudio';
+import { MusicStudio } from './components/Chat/Studios/MusicStudio';
 import { ProjectsView } from './components/Projects/ProjectsView';
 // Studio components temporarily disabled
 // import { VoiceStudio } from './components/Studio/VoiceStudio';
@@ -30,14 +31,13 @@ import { BackupView } from './components/Backup/BackupView';
 import { CookieConsent } from './components/Common/CookieConsent';
 import { BugReportButton } from './components/Common/BugReportButton';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
-import { ComingSoon } from './components/Common/ComingSoon';
 import { StudioModeProvider } from './contexts/StudioModeContext';
-import { Project } from './types';
+import { MouseGlow } from './components/Common/MouseGlow';
+import { Project } from './lib/firestoreService';
 
 const MainApp: React.FC = () => {
   const { currentUser, userData } = useAuth();
   const { currentView, activeProject, navigateTo } = useNavigation();
-  const { theme } = useTheme();
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
@@ -101,14 +101,16 @@ const MainApp: React.FC = () => {
         return <AudioStudio onClose={() => navigateTo('chat')} />;
       case 'image':
         console.log('🎨 Rendering ImageStudio');
-        return <ImageStudio onClose={() => navigateTo('chat')} initialPrompt={activeProject?.name} projectId={activeProject?.id} />;
+        return <ImageStudio onClose={() => navigateTo('chat')} />;
       case 'video':
         console.log('🎬 Rendering VideoStudio');
-        return <VideoStudio onClose={() => navigateTo('chat')} initialPrompt={activeProject?.name} projectId={activeProject?.id} />;
+        return <VideoStudio onClose={() => navigateTo('chat')} />;
+      case 'music':
+        console.log('🎵 Rendering MusicStudio');
+        return <MusicStudio onClose={() => navigateTo('chat')} />;
       case 'code':
       case 'design':
       case 'ppt':
-      case 'music':
         return <UnifiedStudioChat projectId={activeProject?.id} projectName={activeProject?.name} />;
       case 'billing':
         return <BillingView />;
@@ -131,6 +133,7 @@ const MainApp: React.FC = () => {
   if (['voice', 'code', 'design', 'video', 'ppt', 'image', 'music'].includes(currentView)) {
     return (
       <div className="h-screen overflow-hidden bg-black relative">
+        <MouseGlow />
         <div className="relative z-10 h-screen">
           {renderView()}
         </div>
@@ -141,6 +144,7 @@ const MainApp: React.FC = () => {
   // Other views use sidebar
   return (
     <div className="h-screen overflow-hidden bg-black relative">
+      <MouseGlow />
       <div className="relative z-10 h-screen">
         {currentView === 'chat' || currentView === 'settings' ? (
           renderView()

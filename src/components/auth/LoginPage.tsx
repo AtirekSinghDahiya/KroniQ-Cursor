@@ -72,19 +72,12 @@ export const LoginPage: React.FC = () => {
         setIsLogin(false);
       }
     }
-
-    console.log('🔥 Firebase Auth Status:');
-    console.log('   Auth instance:', auth ? 'OK' : 'NULL');
-    console.log('   Project ID:', auth?.app?.options?.projectId);
-    console.log('   Auth domain:', auth?.app?.options?.authDomain);
   }, []);
 
   const handlePromoRedemption = async (userId: string, userEmail: string) => {
     if (!promoCode) return;
 
     try {
-      console.log('🎯 Starting promo redemption for:', { userId, userEmail, promoCode });
-
       const ipAddress = await PromoService.getUserIpAddress();
       const userAgent = PromoService.getUserAgent();
 
@@ -96,21 +89,17 @@ export const LoginPage: React.FC = () => {
         userAgent
       );
 
-      console.log('📊 Redemption result:', result);
-
       if (result.success) {
-        console.log('🎉 Promo redeemed successfully:', result);
         setPromoTokensAwarded(result.tokensAwarded);
         setShowPromoSuccess(true);
         PromoService.clearPromoCodeFromSession();
       } else {
-        console.warn('Promo redemption failed:', result.message);
         if (result.message.includes('claimed')) {
           setShowOfferExpired(true);
         }
       }
-    } catch (error) {
-      console.error('Error redeeming promo:', error);
+    } catch (_error) {
+      // Error redeeming promo
     }
   };
 
@@ -127,7 +116,6 @@ export const LoginPage: React.FC = () => {
     try {
       if (isLogin) {
         await signIn(email, password);
-        console.log('✅ Login successful, waiting for redirect...');
 
         trackEvent({
           eventType: 'auth',
@@ -143,7 +131,6 @@ export const LoginPage: React.FC = () => {
           return;
         }
         const userCredential = await signUp(email, password, displayName);
-        console.log('✅ Sign up successful, waiting for redirect...');
 
         if (userCredential?.user?.uid) {
           await trackSignupComplete(userCredential.user.uid);
@@ -189,7 +176,6 @@ export const LoginPage: React.FC = () => {
 
     try {
       await signInWithGoogle();
-      console.log('✅ Google sign in successful, waiting for redirect...');
 
       setTimeout(() => {
         setLoading(false);
@@ -204,7 +190,6 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser && promoCode && !isLogin && email) {
-      console.log('🔄 User authenticated, attempting promo redemption...');
       handlePromoRedemption(currentUser.uid, email);
     }
   }, [currentUser]);
@@ -227,7 +212,7 @@ export const LoginPage: React.FC = () => {
             className="h-32 md:h-40 w-auto object-contain mb-3 drop-shadow-[0_0_20px_rgba(0,255,240,0.6)]"
           />
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-            <span className="text-glow-teal">KroniQ</span>
+            <span className="text-glow-purple">KroniQ</span>
           </h1>
           <p className="text-white/70 text-sm md:text-base font-light tracking-wide">
             AI Development Studio
@@ -245,11 +230,10 @@ export const LoginPage: React.FC = () => {
                 setIsLogin(true);
                 setError('');
               }}
-              className={`flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm blur-transition active:scale-95 ${
-                isLogin
-                  ? 'bg-gradient-to-r from-[#00FFF0]/30 to-[#8A2BE2]/30 text-white shadow-lg border border-[#00FFF0]/50'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
+              className={`flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm blur-transition active:scale-95 ${isLogin
+                ? 'bg-gradient-to-r from-[#EC4899]/30 to-[#8B5CF6]/30 text-white shadow-lg border border-[#EC4899]/50'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
             >
               Sign In
             </button>
@@ -258,11 +242,10 @@ export const LoginPage: React.FC = () => {
                 setIsLogin(false);
                 setError('');
               }}
-              className={`flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm blur-transition active:scale-95 ${
-                !isLogin
-                  ? 'bg-gradient-to-r from-[#00FFF0]/30 to-[#8A2BE2]/30 text-white shadow-lg border border-[#00FFF0]/50'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
+              className={`flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm blur-transition active:scale-95 ${!isLogin
+                ? 'bg-gradient-to-r from-[#EC4899]/30 to-[#8B5CF6]/30 text-white shadow-lg border border-[#EC4899]/50'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
             >
               Sign Up
             </button>
@@ -343,29 +326,26 @@ export const LoginPage: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-xs font-medium text-white/70">Password Strength</span>
-                    <span className={`text-xs font-semibold ${
-                      passwordStrength.strength === 'strong' ? 'text-green-400' :
+                    <span className={`text-xs font-semibold ${passwordStrength.strength === 'strong' ? 'text-green-400' :
                       passwordStrength.strength === 'medium' ? 'text-yellow-400' : 'text-red-400'
-                    }`}>
+                      }`}>
                       {passwordStrength.strength === 'strong' ? 'Strong' :
-                       passwordStrength.strength === 'medium' ? 'Medium' : 'Weak'}
+                        passwordStrength.strength === 'medium' ? 'Medium' : 'Weak'}
                     </span>
                   </div>
                   <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        passwordStrength.strength === 'strong' ? 'bg-green-500' :
+                      className={`h-full rounded-full transition-all duration-300 ${passwordStrength.strength === 'strong' ? 'bg-green-500' :
                         passwordStrength.strength === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
+                        }`}
                       style={{ width: `${passwordStrength.percentage}%` }}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-1.5">
-                  <div className={`flex items-center text-xs ${
-                    passwordStrength.checks.length ? 'text-green-400' : 'text-white/40'
-                  }`}>
+                  <div className={`flex items-center text-xs ${passwordStrength.checks.length ? 'text-green-400' : 'text-white/40'
+                    }`}>
                     {passwordStrength.checks.length ? (
                       <Check className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     ) : (
@@ -373,9 +353,8 @@ export const LoginPage: React.FC = () => {
                     )}
                     At least 8 characters
                   </div>
-                  <div className={`flex items-center text-xs ${
-                    passwordStrength.checks.uppercase ? 'text-green-400' : 'text-white/40'
-                  }`}>
+                  <div className={`flex items-center text-xs ${passwordStrength.checks.uppercase ? 'text-green-400' : 'text-white/40'
+                    }`}>
                     {passwordStrength.checks.uppercase ? (
                       <Check className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     ) : (
@@ -383,9 +362,8 @@ export const LoginPage: React.FC = () => {
                     )}
                     One uppercase letter
                   </div>
-                  <div className={`flex items-center text-xs ${
-                    passwordStrength.checks.lowercase ? 'text-green-400' : 'text-white/40'
-                  }`}>
+                  <div className={`flex items-center text-xs ${passwordStrength.checks.lowercase ? 'text-green-400' : 'text-white/40'
+                    }`}>
                     {passwordStrength.checks.lowercase ? (
                       <Check className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     ) : (
@@ -393,9 +371,8 @@ export const LoginPage: React.FC = () => {
                     )}
                     One lowercase letter
                   </div>
-                  <div className={`flex items-center text-xs ${
-                    passwordStrength.checks.number ? 'text-green-400' : 'text-white/40'
-                  }`}>
+                  <div className={`flex items-center text-xs ${passwordStrength.checks.number ? 'text-green-400' : 'text-white/40'
+                    }`}>
                     {passwordStrength.checks.number ? (
                       <Check className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     ) : (
@@ -403,9 +380,8 @@ export const LoginPage: React.FC = () => {
                     )}
                     One number
                   </div>
-                  <div className={`flex items-center text-xs ${
-                    passwordStrength.checks.special ? 'text-green-400' : 'text-white/40'
-                  }`}>
+                  <div className={`flex items-center text-xs ${passwordStrength.checks.special ? 'text-green-400' : 'text-white/40'
+                    }`}>
                     {passwordStrength.checks.special ? (
                       <Check className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     ) : (
@@ -426,7 +402,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white py-3 md:py-3.5 px-4 rounded-lg md:rounded-xl font-semibold hover:shadow-xl hover:shadow-[#00FFF0]/40 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm md:text-base min-h-[48px]"
+              className="w-full bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white py-3 md:py-3.5 px-4 rounded-lg md:rounded-xl font-semibold hover:shadow-xl hover:shadow-[#3B82F6]/40 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm md:text-base min-h-[48px]"
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -457,10 +433,10 @@ export const LoginPage: React.FC = () => {
               className="w-full bg-white hover:bg-gray-50 text-gray-800 py-3 md:py-3.5 px-4 rounded-lg md:rounded-xl font-semibold border-2 border-gray-200 hover:border-gray-300 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm md:text-base min-h-[48px] flex items-center justify-center gap-3 group"
             >
               <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               <span>Continue with Google</span>
             </button>
@@ -474,7 +450,7 @@ export const LoginPage: React.FC = () => {
                   setIsLogin(!isLogin);
                   setError('');
                 }}
-                className="text-[#00FFF0] hover:text-[#00FFF0]/80 font-medium transition-colors"
+                className="text-[#3B82F6] hover:text-[#3B82F6]/80 font-medium transition-colors"
               >
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>

@@ -1,610 +1,507 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  X, Video as VideoIcon, Loader, Download, Sparkles,
-  ChevronDown, Plus, Wand2, History, Grid, Trash2
+    Video,
+    X,
+    Loader,
+    Download,
+    Play,
+    Pause,
+    Sparkles,
+    History,
+    Plus,
+    Clock,
+    Wand2
 } from 'lucide-react';
-import { generateVideo } from '../../../lib/videoService';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { saveVideoToProject } from '../../../lib/contentSaveService';
-import { executeGeneration, getGenerationLimitMessage } from '../../../lib/unifiedGenerationService';
-import { checkGenerationLimit } from '../../../lib/generationLimitsService';
-import { supabase } from '../../../lib/supabase';
-import { createStudioProject, updateProjectState, loadProject, generateStudioProjectName, getUserProjects, StudioProject } from '../../../lib/studioProjectService';
+// import { deductTokensForRequest } from '../../../lib/tokenService';
+import { getModelCost } from '../../../lib/modelTokenPricing';
+import { getUserProfile } from '../../../lib/firestoreService';
 import { useStudioMode } from '../../../contexts/StudioModeContext';
+import {
+    createStudioProject,
+    updateProjectState,
+    loadProject,
+    generateStudioProjectName,
+    getUserProjects,
+    StudioProject
+} from '../../../lib/studioProjectService';
+import { generateKieVideo } from '../../../lib/kieAIService';
+import { StudioHeader, GenerationLimitData } from '../../Studio/StudioHeader';
+import { checkGenerationLimit } from '../../../lib/generationLimitsService';
+import { getGenerationLimitMessage } from '../../../lib/unifiedGenerationService';
 
 interface VideoStudioProps {
-  onClose: () => void;
-  initialPrompt?: string;
-  projectId?: string;
+    onClose: () => void;
+    projectId?: string;
 }
 
-export const VideoStudio: React.FC<VideoStudioProps> = ({
-  onClose,
-  initialPrompt = '',
-  projectId: initialProjectId
-}) => {
-  console.log('🎬 VideoStudio component rendered with:', { initialPrompt, initialProjectId });
-  const { showToast } = useToast();
-  const { user } = useAuth();
-  const { projectId: activeProjectId } = useStudioMode();
+interface GeneratedVideo {
+    videoUrl: string;
+    prompt: string;
+    model: string;
+    createdAt: Date;
+}
 
-  const [prompt, setPrompt] = useState(initialPrompt);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
-  const [progress, setProgress] = useState('');
-  const [tokenBalance, setTokenBalance] = useState(0);
-  const [limitInfo, setLimitInfo] = useState<string>('');
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(initialProjectId || activeProjectId || null);
-  const [historyProjects, setHistoryProjects] = useState<StudioProject[]>([]);
+// Video models from screenshot
+const VIDEO_MODELS = [
+    { id: 'veo3_fast', name: 'Veo 3.1 Fast', description: 'Google Veo 3.1 fast generation', speed: 'Fast' },
+    { id: 'veo3', name: 'Veo 3.1 Quality', description: 'Highest quality Google Veo', speed: 'Premium' },
+    { id: 'sora-2', name: 'Sora 2', description: 'OpenAI Sora cinematic video', speed: 'Premium' },
+    { id: 'wan', name: 'Wan 2.5', description: 'Creative video generation', speed: 'Fast' },
+    { id: 'kling', name: 'Kling 2.6', description: 'Realistic video with audio', speed: 'Premium' },
+    { id: 'grok', name: 'Grok Video', description: 'Grok-powered video generation', speed: 'Fast' },
+    { id: 'runway-gen3', name: 'Runway Gen-3', description: 'Professional video generation', speed: 'Premium' }
+];
 
-  // Settings
-  const [selectedModel, setSelectedModel] = useState<'veo3_fast' | 'runway-gen3'>('veo3_fast');
-  const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
-  const [duration, setDuration] = useState<8 | 24>(8);
-  const [resolution, setResolution] = useState<'720p' | '1080p'>('720p');
-  const [showAdvanced, setShowAdvanced] = useState(false);
+const BUTTON_GRADIENT = 'bg-gradient-to-r from-pink-500 to-purple-600';
 
-  useEffect(() => {
-    loadData();
-  }, [user]);
+export const VideoStudio: React.FC<VideoStudioProps> = ({ onClose, projectId: initialProjectId }) => {
+    const { showToast } = useToast();
+    const { user } = useAuth();
+    const { projectId: activeProjectId } = useStudioMode();
+    const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    if (initialProjectId && user?.uid) {
-      loadExistingProject(initialProjectId);
-    }
-  }, [initialProjectId, user]);
+    // State
+    const [prompt, setPrompt] = useState('');
+    const [selectedModel, setSelectedModel] = useState('veo3_fast');
+    const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
+    const [duration, setDuration] = useState<5 | 8 | 10>(5);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [progress, setProgress] = useState('');
+    const [generatedVideo, setGeneratedVideo] = useState<GeneratedVideo | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [tokenBalance, setTokenBalance] = useState(0);
+    const [currentProjectId, setCurrentProjectId] = useState<string | null>(initialProjectId || activeProjectId || null);
+    const [historyProjects, setHistoryProjects] = useState<StudioProject[]>([]);
+    const [limitInfo, setLimitInfo] = useState('');
+    const [generationLimit, setGenerationLimit] = useState<GenerationLimitData | undefined>(undefined);
 
-  const loadExistingProject = async (projectId: string) => {
-    try {
-      const result = await loadProject(projectId);
-      if (result.success && result.project) {
-        setCurrentProjectId(projectId);
-        const state = result.project.session_state || {};
-        setPrompt(state.prompt || '');
-        setGeneratedVideoUrl(state.generatedVideoUrl || null);
-        setSelectedModel(state.selectedModel || 'veo3_fast');
-        setAspectRatio(state.aspectRatio || '16:9');
-        setDuration(state.duration || 8);
-        setResolution(state.resolution || '720p');
-        console.log('✅ Loaded existing video project:', projectId);
-      }
-    } catch (error) {
-      console.error('Error loading video project:', error);
-    }
-  };
+    const STUDIO_COLOR = '#F97316'; // Orange for video
 
-  const saveProjectState = async (overrides: any = {}) => {
-    if (!user?.uid) return null;
-
-    const sessionState = {
-      prompt,
-      generatedVideoUrl,
-      selectedModel,
-      aspectRatio,
-      duration,
-      resolution,
-      ...overrides
+    // Load saved video projects
+    const refreshProjects = async () => {
+        if (!user?.uid) return;
+        try {
+            const projectsResult = await getUserProjects(user.uid, 'video');
+            if (projectsResult.success && projectsResult.projects) {
+                setHistoryProjects(projectsResult.projects);
+            }
+        } catch (error) {
+            console.error('Error loading video projects:', error);
+        }
     };
 
-    try {
-      if (currentProjectId) {
-        await updateProjectState({
-          projectId: currentProjectId,
-          sessionState
-        });
-        console.log('✅ Video project state updated');
-        return currentProjectId;
-      } else {
-        const projectName = generateStudioProjectName('video', prompt);
-        const result = await createStudioProject({
-          userId: user.uid,
-          studioType: 'video',
-          name: projectName,
-          description: prompt,
-          model: selectedModel,
-          sessionState
-        });
-
-        if (result.success && result.projectId) {
-          setCurrentProjectId(result.projectId);
-          console.log('✅ New video project created:', result.projectId);
-          showToast('success', 'Project Saved', 'Your video project has been saved');
-          return result.projectId;
+    useEffect(() => {
+        if (user?.uid) {
+            loadTokenBalance();
+            loadLimitInfo();
+            refreshProjects();
         }
-      }
-    } catch (error) {
-      console.error('Error saving video project:', error);
-    }
-    return null;
-  };
+    }, [user]);
 
-  const loadData = async () => {
-    if (!user?.uid) return;
+    const loadLimitInfo = async () => {
+        if (!user?.uid) return;
+        const limit = await checkGenerationLimit(user.uid, 'video');
+        setLimitInfo(getGenerationLimitMessage('video', limit.isPaid, limit.current, limit.limit));
+        setGenerationLimit({ current: limit.current, limit: limit.limit, isPaid: limit.isPaid });
+    };
 
-    // Load token balance
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tokens_balance')
-      .eq('id', user.uid)
-      .maybeSingle();
+    useEffect(() => {
+        if (initialProjectId && user?.uid) {
+            loadExistingProject(initialProjectId);
+        }
+    }, [initialProjectId, user]);
 
-    if (profile) {
-      setTokenBalance(profile.tokens_balance || 0);
-    }
+    const loadTokenBalance = async () => {
+        if (!user?.uid) return;
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+            const remaining = profile.tokensLimit - profile.tokensUsed;
+            setTokenBalance(remaining > 0 ? remaining : 0);
+        }
+    };
 
-    // Load generation limit info
-    const limit = await checkGenerationLimit(user.uid, 'video');
-    setLimitInfo(getGenerationLimitMessage('video', limit.isPaid, limit.current, limit.limit));
+    const loadExistingProject = async (projectId: string) => {
+        try {
+            const result = await loadProject(projectId);
+            if (result.success && result.project) {
+                setCurrentProjectId(projectId);
+                const state = result.project.session_state || {};
+                setPrompt(state.prompt || '');
+                setSelectedModel(state.selectedModel || 'veo3_fast');
+                setAspectRatio(state.aspectRatio || '16:9');
+                setDuration(state.duration || 5);
+                if (state.generatedVideo) {
+                    setGeneratedVideo(state.generatedVideo);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading video project:', error);
+        }
+    };
 
-    // Load recent projects
-    const projectsResult = await getUserProjects(user.uid, 'video');
-    if (projectsResult.success && projectsResult.projects) {
-      setHistoryProjects(projectsResult.projects);
-    }
-  };
+    const saveProjectState = async (overrides: any = {}) => {
+        if (!user?.uid) return null;
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) {
-      showToast('error', 'Empty Prompt', 'Please enter a description for your video');
-      return;
-    }
+        const sessionState = {
+            prompt,
+            selectedModel,
+            aspectRatio,
+            duration,
+            generatedVideo,
+            ...overrides
+        };
 
-    if (!user?.uid) {
-      showToast('error', 'Authentication Required', 'Please log in to generate videos');
-      return;
-    }
+        try {
+            if (currentProjectId) {
+                await updateProjectState({ projectId: currentProjectId, sessionState });
+                return currentProjectId;
+            } else {
+                const projectName = generateStudioProjectName('video', prompt);
+                const result = await createStudioProject({
+                    userId: user.uid,
+                    studioType: 'video',
+                    name: projectName,
+                    description: prompt,
+                    model: selectedModel,
+                    sessionState
+                });
 
-    setIsGenerating(true);
-    setGeneratedVideoUrl(null);
+                if (result.success && result.projectId) {
+                    setCurrentProjectId(result.projectId);
+                    return result.projectId;
+                }
+            }
+        } catch (error) {
+            console.error('Error saving video project:', error);
+        }
+        return null;
+    };
 
-    const result = await executeGeneration({
-      userId: user.uid,
-      generationType: 'video',
-      modelId: selectedModel,
-      provider: 'kie-ai',
-      onProgress: setProgress
-    }, async () => {
-      setProgress('Generating video with Kie AI...');
+    const handleGenerate = async () => {
+        if (!prompt.trim()) {
+            showToast('error', 'Empty Prompt', 'Please describe the video you want to create');
+            return;
+        }
 
-      const videoResult = await Promise.race([
-        generateVideo({
-          prompt,
-          model: selectedModel,
-          duration: duration === 8 ? 5 : 10,
-          resolution: resolution === '720p' ? '1280x720' : '1920x1080'
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Video generation timeout after 10 minutes')), 600000)
-        )
-      ]);
+        if (!user?.uid) {
+            showToast('error', 'Authentication Required', 'Please log in to generate videos');
+            return;
+        }
 
-      return videoResult.url;
-    });
+        setIsGenerating(true);
+        setProgress('Initializing video generation...');
+        setGeneratedVideo(null);
 
-    if (result.success && result.data) {
-      setGeneratedVideoUrl(result.data);
+        try {
+            setProgress(`Generating with ${VIDEO_MODELS.find(m => m.id === selectedModel)?.name || selectedModel}...`);
 
-      await saveVideoToProject(user.uid, prompt, result.data, {
-        model: selectedModel,
-        duration,
-        provider: 'kie-ai'
-      });
+            const videoUrl = await generateKieVideo(prompt, selectedModel);
 
-      // Save Project State
-      setGeneratedVideoUrl(result.data);
+            const video: GeneratedVideo = {
+                videoUrl,
+                prompt,
+                model: selectedModel,
+                createdAt: new Date()
+            };
+            setGeneratedVideo(video);
 
-      // Save or create project using the helper
-      await saveProjectState({ generatedVideoUrl: result.data });
+            // Deduct tokens
+            const modelCost = getModelCost(selectedModel);
+            const tokensToDeduct = modelCost?.tokensPerMessage || 15000; // Use actual token token count
 
-      showToast('success', 'Video Generated!', 'Your video is ready');
-      await loadData();
-    } else if (result.limitReached) {
-      showToast('error', 'Limit Reached', result.error || 'Generation limit exceeded');
-    } else if (result.insufficientTokens) {
-      showToast('error', 'Insufficient Tokens', result.error || 'Not enough tokens');
-    } else {
-      showToast('error', 'Generation Failed', result.error || 'Failed to generate video');
-    }
+            // Use Firebase for token deduction and usage tracking
+            const { deductTokens, incrementUsage } = await import('../../../lib/firestoreService');
+            await deductTokens(user.uid, tokensToDeduct);
+            await incrementUsage(user.uid, 'video', 1);
 
-    setIsGenerating(false);
-    setProgress('');
-  };
+            await loadTokenBalance();
+            await loadLimitInfo();
 
-  const handleDownload = (url: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `kroniq_video_${Date.now()}.mp4`;
-    link.click();
-    showToast('success', 'Downloaded', 'Video saved to your device');
-  };
+            // Save project
+            await saveProjectState({ generatedVideo: video });
+            await refreshProjects();
 
-  return (
-    <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
-      {/* Main Content */}
-      {/* Projects Sidebar */}
-      <div className="hidden lg:flex lg:w-80 border-r border-white/10 flex-col bg-black h-full">
-        <div className="p-4 border-b border-white/10">
-          <h2 className="font-semibold text-white mb-2">Recent Projects</h2>
-          <button
-            onClick={() => {
-              setPrompt('');
-              setGeneratedVideoUrl(null);
-              setCurrentProjectId(null);
-            }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all"
-          >
-            <Plus className="w-4 h-4" /> New Project
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {/* Project list will be populated here by fetching from Supabase */}
-          <div className="text-center text-white/40 text-sm py-4">
-            Projects load from sidebar
-          </div>
-        </div>
-      </div>
+            showToast('success', 'Video Generated!', `Deducted ${tokensToDeduct.toLocaleString()} tokens`);
+            setProgress('');
+        } catch (error: any) {
+            console.error('Video generation error:', error);
+            showToast('error', 'Generation Failed', error.message || 'Failed to generate video');
+        } finally {
+            setIsGenerating(false);
+            setProgress('');
+        }
+    };
 
-      {/* Projects Sidebar */}
-      <div className="hidden lg:flex lg:w-80 border-r border-white/10 flex-col bg-black h-full">
-        <div className="p-4 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="w-5 h-5 text-white/60" />
-            <h2 className="font-semibold text-white">Recent Projects</h2>
-          </div>
-          <button
-            onClick={() => {
-              setPrompt('');
-              setGeneratedVideoUrl(null);
-              setCurrentProjectId(null);
-              setGeneratedVideoUrl(null);
-            }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-white/90 text-black font-medium rounded-lg transition-all"
-          >
-            <Plus className="w-4 h-4" /> New Project
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {historyProjects.length === 0 ? (
-            <div className="text-center py-8 text-white/40 text-sm">
-              <Grid className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              No projects yet
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {historyProjects.map(proj => (
-                <div
-                  key={proj.id}
-                  onClick={() => loadExistingProject(proj.id)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${currentProjectId === proj.id
-                      ? 'bg-white/10 border-white/30'
-                      : 'bg-white/5 border-white/10 hover:border-white/20'
-                    }`}
-                >
-                  <div className="font-medium text-sm text-white truncate mb-1">
-                    {proj.name.replace('Video: ', '')}
-                  </div>
-                  <div className="text-xs text-white/50">
-                    {new Date(proj.updated_at).toLocaleDateString()}
-                  </div>
+    const handleDownload = () => {
+        if (!generatedVideo) return;
+        const link = document.createElement('a');
+        link.href = generatedVideo.videoUrl;
+        link.download = `kroniq_video_${Date.now()}.mp4`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('success', 'Downloaded!', 'Video file downloaded');
+    };
+
+    const togglePlayPause = () => {
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.pause();
+        } else {
+            videoRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    const selectedModelInfo = VIDEO_MODELS.find(m => m.id === selectedModel);
+
+    return (
+        <div className="h-full flex flex-col bg-black overflow-hidden">
+            {/* Header */}
+            <StudioHeader
+                icon={Video}
+                title="Video Studio"
+                subtitle="AI-Powered Video Generation"
+                color={STUDIO_COLOR}
+                limitInfo={limitInfo}
+                generationLimit={generationLimit}
+                tokenBalance={tokenBalance}
+                onClose={onClose}
+            />
+
+            {/* Main Content */}
+            <div className="flex-1 flex overflow-hidden relative">
+                {/* Gradient Background */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                    <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-600/20 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-600/20 rounded-full blur-[120px]" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar - Black & White Only */}
-        <div className="relative border-b border-white/10 bg-black overflow-hidden">
-          <div className="relative flex items-center justify-between px-6 sm:px-8 py-5 sm:py-6">
-            <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-              {/* Studio Icon */}
-              <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-xl bg-white/5 border border-white/20">
-                <VideoIcon className="w-6 h-6 text-white" />
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">
-                    🎬 NEW Video Studio
-                  </h1>
-                  <span className="hidden sm:inline-flex px-2.5 py-1 text-xs font-semibold bg-white/10 text-white border border-white/20 rounded-full">
-                    AI Powered
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-white/50 truncate">{limitInfo}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-              {/* Token Balance - Black & White */}
-              <div className="hidden sm:flex items-center gap-2.5 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all">
-                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-white/50 leading-none mb-1">Balance</span>
-                  <span className="text-sm font-bold text-white leading-none">{tokenBalance.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Mobile token display */}
-              <div className="sm:hidden flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
-                <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance / 1000)}k` : tokenBalance}</span>
-              </div>
-
-              <button
-                onClick={onClose}
-                className="p-2.5 hover:bg-white/10 active:scale-95 rounded-lg transition-all"
-                title="Close Studio"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Canvas - Center area with prompt at bottom */}
-          <div className="flex-1 flex flex-col bg-black relative overflow-hidden">
-            {/* Video Display Area */}
-            <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-auto">
-              {isGenerating ? (
-                <div className="flex flex-col items-center gap-6">
-                  <div className="relative">
-                    <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="text-center px-4">
-                    <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your video...</p>
-                    <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
-                  </div>
-                </div>
-              ) : generatedVideoUrl ? (
-                <div className="max-w-5xl w-full">
-                  <div className="relative rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl mb-4">
-                    <video
-                      src={generatedVideoUrl}
-                      controls
-                      autoPlay
-                      loop
-                      className="w-full h-auto"
-                    />
-                    <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
-                      <button
-                        onClick={() => handleDownload(generatedVideoUrl)}
-                        className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
-                        title="Download"
-                      >
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                    <p className="text-sm text-white/70 line-clamp-2">{prompt}</p>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-white/50">
-                      <span>Model: {selectedModel.toUpperCase()}</span>
-                      <span>•</span>
-                      <span>{aspectRatio}</span>
-                      <span>•</span>
-                      <span>{duration}s</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center max-w-2xl px-4">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
-                    <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Video</h3>
-                  <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
-                    Describe your video in the prompt below. Be detailed for best results - include action, scene, mood, and camera movements.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[
-                        'A person dancing in a golden field at sunset',
-                        'Cinematic drone shot flying through a futuristic city',
-                        'Ocean waves crashing on a beach in slow motion',
-                        'Time-lapse of clouds moving over mountains'
-                      ].map((example) => (
+                {/* Left Sidebar - Library */}
+                <div className="hidden lg:flex lg:w-80 border-r border-white/5 flex-col bg-black/40 backdrop-blur-xl h-full z-10">
+                    <div className="p-4 border-b border-white/5">
+                        <h2 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-4">
+                            <History className="w-4 h-4 text-orange-400" /> Library
+                        </h2>
                         <button
-                          key={example}
-                          onClick={() => setPrompt(example)}
-                          className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                            onClick={() => {
+                                setPrompt('');
+                                setGeneratedVideo(null);
+                                setCurrentProjectId(null);
+                            }}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 ${BUTTON_GRADIENT} text-white font-medium rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]`}
                         >
-                          <span className="text-white mr-2">→</span>
-                          {example}
+                            <Plus className="w-4 h-4" /> New Project
                         </button>
-                      ))}
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Bottom Prompt Input Area */}
-            <div className="border-t border-white/10 bg-black p-4 sm:p-6">
-              <div className="max-w-4xl mx-auto">
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe your video in detail... e.g., 'A person dancing in a golden field at sunset, camera slowly zooming out'"
-                      className="w-full h-20 sm:h-16 px-4 py-3 bg-white/5 border border-white/10 focus:border-white/30 rounded-lg text-white text-sm placeholder-white/30 focus:outline-none resize-none transition-colors"
-                      disabled={isGenerating}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                          e.preventDefault();
-                          handleGenerate();
-                        }
-                      }}
-                    />
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-white/40">{prompt.length} / 1000 characters</span>
-                      <span className="text-xs text-white/40">Ctrl+Enter to generate</span>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                        {historyProjects.length === 0 ? (
+                            <div className="text-center py-12 text-white/20">
+                                <Video className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                <p className="text-sm">No saved videos yet</p>
+                            </div>
+                        ) : (
+                            historyProjects.map(proj => (
+                                <div
+                                    key={proj.id}
+                                    onClick={() => loadExistingProject(proj.id)}
+                                    className={`group p-3 rounded-xl cursor-pointer transition-all border ${currentProjectId === proj.id
+                                        ? 'bg-white/10 border-orange-500/50 shadow-inner'
+                                        : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/10'
+                                        }`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="font-medium text-sm text-white truncate w-full pr-2">
+                                            {proj.name.replace('Video: ', '')}
+                                        </span>
+                                        {currentProjectId === proj.id && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse mt-1.5" />
+                                        )}
+                                    </div>
+                                    <div className="text-[10px] text-white/40">
+                                        {new Date(proj.updatedAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                  </div>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !prompt.trim()}
-                    className="flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-white/90 disabled:bg-white/5 text-black font-semibold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed h-20 sm:h-16"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader className="w-5 h-5 animate-spin" />
-                        <span className="hidden sm:inline">Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-5 h-5" />
-                        <span className="hidden sm:inline">Generate</span>
-                      </>
-                    )}
-                  </button>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Right Settings Panel - Compact */}
-          <div className="w-full lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col bg-black overflow-y-auto max-h-[50vh] lg:max-h-none">
-            {/* Model Selector */}
-            <div className="p-4 sm:p-6 border-b border-white/10">
-              <div className="text-sm font-semibold text-white mb-3">AI Model</div>
-              <div className="space-y-2">
-                {[
-                  { id: 'veo3_fast', name: 'Veo 3.1 Fast', desc: 'Google Veo 3.1 fast generation', badge: 'Fast' },
-                  { id: 'runway-gen3', name: 'Runway Gen-3', desc: 'Professional video generation', badge: 'Premium' }
-                ].map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => setSelectedModel(model.id as any)}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${selectedModel === model.id
-                      ? 'bg-white/10 border-white/30'
-                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-white text-sm">{model.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${model.badge === 'Fast' ? 'bg-white/10 text-white' : 'bg-white/10 text-white'
-                        }`}>
-                        {model.badge}
-                      </span>
+                {/* Center - Video Preview */}
+                <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 z-10 relative">
+                    <div className="w-full max-w-3xl">
+                        {isGenerating ? (
+                            <div className="flex flex-col items-center justify-center min-h-[400px]">
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full animate-pulse" />
+                                    <Loader className="w-16 h-16 animate-spin text-orange-500 relative z-10" />
+                                </div>
+                                <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-400">
+                                    Generating Video...
+                                </h3>
+                                <p className="text-white/40 text-sm mt-2">{progress}</p>
+                            </div>
+                        ) : generatedVideo ? (
+                            <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-xl">
+                                <video
+                                    ref={videoRef}
+                                    src={generatedVideo.videoUrl}
+                                    className="w-full aspect-video"
+                                    controls
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onEnded={() => setIsPlaying(false)}
+                                />
+                                <div className="p-4 flex items-center justify-between border-t border-white/10">
+                                    <div>
+                                        <p className="text-sm font-medium text-white truncate max-w-md">{generatedVideo.prompt}</p>
+                                        <p className="text-xs text-white/40">{selectedModelInfo?.name}</p>
+                                    </div>
+                                    <button
+                                        onClick={handleDownload}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        <span className="text-sm">Download</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+                                <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-orange-500/20 to-pink-500/20 flex items-center justify-center mb-6">
+                                    <Video className="w-16 h-16 text-orange-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">AI Video Studio</h3>
+                                <p className="text-white/40 max-w-md">
+                                    Create stunning videos with AI. Select a model, describe your video, and click generate.
+                                </p>
+                            </div>
+                        )}
                     </div>
-                    <p className="text-xs text-white/50">{model.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Aspect Ratio */}
-            <div className="p-4 sm:p-6 border-b border-white/10">
-              <div className="text-sm font-semibold text-white mb-3">Aspect Ratio</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: '16:9', label: '16:9', icon: '▭', desc: 'Landscape' },
-                  { id: '9:16', label: '9:16', icon: '▯', desc: 'Portrait' }
-                ].map((ratio) => (
-                  <button
-                    key={ratio.id}
-                    onClick={() => setAspectRatio(ratio.id as any)}
-                    className={`p-3 rounded-lg border transition-all ${aspectRatio === ratio.id
-                      ? 'bg-white/10 border-white/30'
-                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                      }`}
-                  >
-                    <div className="text-2xl mb-1">{ratio.icon}</div>
-                    <div className="text-xs font-medium text-white">{ratio.label}</div>
-                    <div className="text-xs text-white/50">{ratio.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Video Duration */}
-            <div className="p-4 sm:p-6 border-b border-white/10">
-              <div className="text-sm font-semibold text-white mb-3">Video Duration</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[8, 24].map((dur) => (
-                  <button
-                    key={dur}
-                    onClick={() => setDuration(dur as any)}
-                    className={`p-3 rounded-lg border transition-all ${duration === dur
-                      ? 'bg-white/10 border-white/30'
-                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                      }`}
-                  >
-                    <div className="text-sm font-medium text-white">{dur}s</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Advanced Settings */}
-            <div className="p-4 sm:p-6 border-b border-white/10">
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between text-sm font-semibold text-white mb-3"
-              >
-                <span>Advanced Settings</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showAdvanced && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs text-white/50 mb-2 block">Output Resolution</label>
-                    <select
-                      value={resolution}
-                      onChange={(e) => setResolution(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-white/30"
-                    >
-                      <option value="720p">720p</option>
-                      <option value="1080p">1080p</option>
-                    </select>
-                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Quick Actions */}
-            <div className="p-4 sm:p-6 border-t border-white/10">
-              <div className="text-sm font-semibold text-white mb-3">Quick Actions</div>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setPrompt('');
-                    setGeneratedVideoUrl(null);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Generation
-                </button>
-                {generatedVideoUrl && (
-                  <button
-                    onClick={() => handleDownload(generatedVideoUrl)}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Video
-                  </button>
-                )}
-              </div>
+                {/* Right Sidebar - Controls */}
+                <div className="w-full lg:w-[380px] border-l border-white/5 flex flex-col bg-black/40 backdrop-blur-xl z-10 overflow-y-auto">
+                    {/* Model Selection */}
+                    <div className="p-4 border-b border-white/5">
+                        <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">Model Selection</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            {VIDEO_MODELS.map(model => (
+                                <button
+                                    key={model.id}
+                                    onClick={() => setSelectedModel(model.id)}
+                                    disabled={isGenerating}
+                                    className={`p-3 rounded-xl border text-left transition-all ${selectedModel === model.id
+                                        ? 'bg-orange-500/20 border-orange-500/50'
+                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Video className="w-4 h-4 text-white/60" />
+                                        <span className="text-sm font-medium text-white">{model.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${model.speed === 'Premium' ? 'bg-purple-500/20 text-purple-300' : 'bg-green-500/20 text-green-300'
+                                            }`}>
+                                            {model.speed}
+                                        </span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Prompt */}
+                    <div className="p-4 border-b border-white/5 flex-1">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider">Prompt</h3>
+                            <span className="text-xs text-white/30">{prompt.length} / 1000</span>
+                        </div>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder="Describe the video you want to create..."
+                            className="w-full h-32 px-4 py-3 bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none resize-none transition-all"
+                            disabled={isGenerating}
+                            maxLength={1000}
+                        />
+                    </div>
+
+                    {/* Settings */}
+                    <div className="p-4 border-b border-white/5">
+                        <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">Settings</h3>
+
+                        {/* Aspect Ratio */}
+                        <div className="mb-4">
+                            <label className="text-xs text-white/50 mb-2 block">Aspect Ratio</label>
+                            <div className="flex gap-2">
+                                {(['16:9', '9:16', '1:1'] as const).map(ar => (
+                                    <button
+                                        key={ar}
+                                        onClick={() => setAspectRatio(ar)}
+                                        disabled={isGenerating}
+                                        className={`flex-1 py-2 rounded-lg text-sm transition-all ${aspectRatio === ar
+                                            ? 'bg-orange-500/20 border border-orange-500/50 text-white'
+                                            : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        {ar}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Duration */}
+                        <div>
+                            <label className="text-xs text-white/50 mb-2 block">Duration</label>
+                            <div className="flex gap-2">
+                                {([5, 8, 10] as const).map(d => (
+                                    <button
+                                        key={d}
+                                        onClick={() => setDuration(d)}
+                                        disabled={isGenerating}
+                                        className={`flex-1 py-2 rounded-lg text-sm flex items-center justify-center gap-1 transition-all ${duration === d
+                                            ? 'bg-orange-500/20 border border-orange-500/50 text-white'
+                                            : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <Clock className="w-3 h-3" />
+                                        {d}s
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Generate Button */}
+                    <div className="p-4 mt-auto">
+                        <div className="flex items-center justify-between text-xs text-white/40 mb-3">
+                            <span>Est. Cost: ~15,000 tokens</span>
+                        </div>
+                        <button
+                            onClick={handleGenerate}
+                            disabled={isGenerating || !prompt.trim()}
+                            className={`w-full flex items-center justify-center gap-2 px-6 py-4 ${BUTTON_GRADIENT} text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader className="w-5 h-5 animate-spin" />
+                                    <span>Generating...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Wand2 className="w-5 h-5" />
+                                    <span>Generate Video</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };

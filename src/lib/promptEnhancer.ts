@@ -1,6 +1,6 @@
 /**
  * Prompt Enhancement Service
- * Uses Sherlock Dash Alpha for fast prompt improvements
+ * Uses fast AI models for quick prompt improvements
  */
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
@@ -20,9 +20,11 @@ export async function enhancePrompt(
     throw new Error('Prompt cannot be empty');
   }
 
+  // Use fast models that are confirmed working
+  // x-ai/grok-4.1-fast is the successor to the Sherlock models
   const model = options.useReasoningModel
-    ? 'openrouter/sherlock-think-alpha'
-    : 'openrouter/sherlock-dash-alpha';
+    ? 'x-ai/grok-4.1-fast'
+    : 'google/gemini-2.0-flash-001';
 
   const systemPrompt = `You are an expert prompt engineer. Your task is to enhance user prompts to be more detailed, clear, and effective for AI models.
 

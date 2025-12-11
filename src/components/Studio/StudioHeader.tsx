@@ -1,5 +1,11 @@
 import React from 'react';
-import { X, LucideIcon } from 'lucide-react';
+import { X, LucideIcon, Coins } from 'lucide-react';
+
+export interface GenerationLimitData {
+  current: number;
+  limit: number;
+  isPaid?: boolean;
+}
 
 export interface StudioHeaderProps {
   icon: LucideIcon;
@@ -7,6 +13,7 @@ export interface StudioHeaderProps {
   subtitle?: string;
   color: string;
   limitInfo?: string;
+  generationLimit?: GenerationLimitData;
   tokenBalance?: number;
   onClose: () => void;
 }
@@ -16,10 +23,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   title,
   subtitle,
   color,
-  limitInfo,
+  limitInfo: _limitInfo, // kept for backwards compatibility
+  generationLimit,
   tokenBalance,
   onClose
 }) => {
+
   return (
     <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 bg-black">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -37,31 +46,59 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-base sm:text-lg font-semibold text-white truncate">
               {title}
             </h1>
+
+            {/* Generation Limit Display - Visual X/Y format */}
+            {generationLimit && (
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10"
+                title={generationLimit.isPaid ? 'Unlimited (token-based)' : `${generationLimit.limit - generationLimit.current} remaining today`}
+              >
+                <Icon className="w-4 h-4" style={{ color }} />
+                <span className="text-xs font-medium text-white/80">
+                  {generationLimit.isPaid ? (
+                    <span style={{ color }}>∞</span>
+                  ) : (
+                    <>
+                      <span className={generationLimit.current >= generationLimit.limit ? 'text-red-400' : 'text-white'}>
+                        {generationLimit.current}
+                      </span>
+                      <span className="text-white/50">/{generationLimit.limit}</span>
+                    </>
+                  )}
+                </span>
+                {!generationLimit.isPaid && (
+                  <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full transition-all"
+                      style={{
+                        width: `${Math.min((generationLimit.current / generationLimit.limit) * 100, 100)}%`,
+                        backgroundColor: generationLimit.current >= generationLimit.limit ? '#ef4444' :
+                          generationLimit.current >= generationLimit.limit * 0.8 ? '#eab308' : color
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Token Balance Display */}
             {tokenBalance !== undefined && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/10">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                <Coins className="w-4 h-4 text-yellow-400" />
                 <span className="text-xs font-medium text-white/80">
                   {tokenBalance.toLocaleString()}
                 </span>
+                <span className="text-[10px] text-white/40">tokens</span>
               </div>
             )}
           </div>
 
-          {(subtitle || limitInfo) && (
-            <div className="flex items-center gap-2 mt-0.5">
-              {subtitle && (
-                <p className="text-xs text-white/40 truncate">{subtitle}</p>
-              )}
-              {limitInfo && (
-                <span className="hidden sm:inline text-xs text-white/40">
-                  • {limitInfo}
-                </span>
-              )}
-            </div>
+          {subtitle && (
+            <p className="text-xs text-white/40 truncate mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>

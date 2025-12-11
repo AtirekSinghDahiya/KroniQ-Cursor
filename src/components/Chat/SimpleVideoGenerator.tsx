@@ -110,7 +110,7 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
         }, setProgress);
       } else {
         // Kling Video via Kie AI
-        setProgress('Generating video with Kie AI...');
+        setProgress('Generating video with KroniQ AI...');
         const result = await generateVideo({
           prompt,
           model: 'kling-video',
@@ -192,7 +192,7 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
               {/* Mobile token display */}
               <div className="sm:hidden flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
                 <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance/1000)}k` : tokenBalance}</span>
+                <span className="text-sm font-medium">{tokenBalance > 999 ? `${Math.floor(tokenBalance / 1000)}k` : tokenBalance}</span>
               </div>
 
               <button
@@ -212,83 +212,83 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
           <div className="flex-1 flex flex-col bg-black relative overflow-hidden">
             {/* Video Display Area */}
             <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-auto">
-            {isGenerating ? (
-              <div className="flex flex-col items-center gap-6">
-                <div className="relative">
-                  <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
+              {isGenerating ? (
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative">
+                    <Loader className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-white" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="text-center px-4">
+                    <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your video...</p>
+                    <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
                   </div>
                 </div>
-                <div className="text-center px-4">
-                  <p className="text-white/80 font-medium mb-2 text-sm sm:text-base">Generating your video...</p>
-                  <p className="text-xs sm:text-sm text-white/50">{progress || 'Please wait'}</p>
-                </div>
-              </div>
-            ) : generatedVideoUrl ? (
-              <div className="max-w-5xl w-full">
-                <div className="relative rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl mb-4">
-                  <video
-                    src={generatedVideoUrl}
-                    controls
-                    autoPlay
-                    loop
-                    className="w-full h-auto"
-                  />
-                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
-                    <button
-                      onClick={() => handleDownload(generatedVideoUrl)}
-                      className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-sm text-white/70 line-clamp-2">{prompt}</p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-white/50">
-                    <span>Model: {selectedModel.toUpperCase()}</span>
-                    <span>•</span>
-                    <span>{aspectRatio}</span>
-                    <span>•</span>
-                    <span>{duration}s</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center max-w-2xl px-4">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
-                  <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Video</h3>
-                <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
-                  Describe your video in the prompt below. Be detailed for best results - include action, scene, mood, and camera movements.
-                </p>
-                <div className="space-y-4">
-                  <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      'A person dancing in a golden field at sunset',
-                      'Cinematic drone shot flying through a futuristic city',
-                      'Ocean waves crashing on a beach in slow motion',
-                      'Time-lapse of clouds moving over mountains'
-                    ].map((example) => (
+              ) : generatedVideoUrl ? (
+                <div className="max-w-5xl w-full">
+                  <div className="relative rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl mb-4">
+                    <video
+                      src={generatedVideoUrl}
+                      controls
+                      autoPlay
+                      loop
+                      className="w-full h-auto"
+                    />
+                    <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
                       <button
-                        key={example}
-                        onClick={() => setPrompt(example)}
-                        className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                        onClick={() => handleDownload(generatedVideoUrl)}
+                        className="p-2 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-lg border border-white/10 transition-all"
+                        title="Download"
                       >
-                        <span className="text-white mr-2">→</span>
-                        {example}
+                        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
-                    ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <p className="text-sm text-white/70 line-clamp-2">{prompt}</p>
+                    <div className="flex items-center gap-4 mt-3 text-xs text-white/50">
+                      <span>Model: {selectedModel.toUpperCase()}</span>
+                      <span>•</span>
+                      <span>{aspectRatio}</span>
+                      <span>•</span>
+                      <span>{duration}s</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center max-w-2xl px-4">
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-6 sm:mb-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse" />
+                    <Wand2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 relative z-10" />
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Create Your Video</h3>
+                  <p className="text-sm sm:text-base text-white/50 mb-8 max-w-lg mx-auto">
+                    Describe your video in the prompt below. Be detailed for best results - include action, scene, mood, and camera movements.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="text-xs sm:text-sm text-white/40 font-medium mb-3">Try these examples:</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        'A person dancing in a golden field at sunset',
+                        'Cinematic drone shot flying through a futuristic city',
+                        'Ocean waves crashing on a beach in slow motion',
+                        'Time-lapse of clouds moving over mountains'
+                      ].map((example) => (
+                        <button
+                          key={example}
+                          onClick={() => setPrompt(example)}
+                          className="px-4 py-3 text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all text-left"
+                        >
+                          <span className="text-white mr-2">→</span>
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Prompt Input Area */}
@@ -343,7 +343,7 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
               <div className="text-sm font-semibold text-white mb-3">AI Model</div>
               <div className="space-y-2">
                 {[
-                  { id: 'kling-video', name: 'Kling Video', desc: 'High-quality via Kie AI', badge: 'Premium' },
+                  { id: 'kling-video', name: 'Kling Video', desc: 'High-quality generation', badge: 'Premium' },
                   { id: 'veo-2', name: 'Veo 2', desc: 'Fast and reliable', badge: 'Fast' },
                   { id: 'veo-3', name: 'Veo 3.1', desc: 'Latest Google model', badge: 'Premium' },
                   { id: 'hailuo', name: 'Hailuo', desc: 'High quality', badge: 'Premium' }
@@ -351,11 +351,10 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
                   <button
                     key={model.id}
                     onClick={() => setSelectedModel(model.id as any)}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
-                      selectedModel === model.id
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`w-full p-3 rounded-lg border transition-all text-left ${selectedModel === model.id
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-white text-sm">{model.name}</span>
@@ -380,11 +379,10 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
                   <button
                     key={ratio.id}
                     onClick={() => setAspectRatio(ratio.id as any)}
-                    className={`p-3 rounded-lg border transition-all ${
-                      aspectRatio === ratio.id
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`p-3 rounded-lg border transition-all ${aspectRatio === ratio.id
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="text-2xl mb-1">{ratio.icon}</div>
                     <div className="text-xs font-medium text-white">{ratio.label}</div>
@@ -402,11 +400,10 @@ export const SimpleVideoGenerator: React.FC<SimpleVideoGeneratorProps> = ({
                   <button
                     key={dur}
                     onClick={() => setDuration(dur as any)}
-                    className={`p-3 rounded-lg border transition-all ${
-                      duration === dur
-                        ? 'bg-white/10 border-white/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
-                    }`}
+                    className={`p-3 rounded-lg border transition-all ${duration === dur
+                      ? 'bg-white/10 border-white/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/[0.07]'
+                      }`}
                   >
                     <div className="text-sm font-medium text-white">{dur}s</div>
                   </button>

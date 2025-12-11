@@ -49,8 +49,10 @@ export const MainChatNew: React.FC = () => {
         {/* Logo */}
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <Menu className="w-5 h-5 text-white/70" />
-            <h1 className="text-lg font-semibold">Kroniq AI</h1>
+            <div className="w-8 h-8 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <h1 className="text-lg font-semibold bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent">KroniQ AI</h1>
           </div>
         </div>
 
@@ -116,59 +118,55 @@ export const MainChatNew: React.FC = () => {
           {/* Main Content Header with Logo */}
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="max-w-4xl w-full">
-              <h1 className="text-5xl font-semibold text-center mb-8">
-                Kroniq AI Studio
+              <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4] bg-clip-text text-transparent">
+                KroniQ AI Studio
               </h1>
+              <p className="text-center text-white/60 mb-8">Create anything with AI</p>
 
               {/* Tabs */}
               <div className="flex items-center justify-center gap-6 mb-12">
                 <button
                   onClick={() => setActiveTab('featured')}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === 'featured'
-                      ? 'text-white border-blue-500'
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === 'featured'
+                      ? 'text-[#8B5CF6] border-[#8B5CF6]'
                       : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
+                    }`}
                 >
                   Featured
                 </button>
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === 'chat'
-                      ? 'text-white border-blue-500'
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === 'chat'
+                      ? 'text-[#8B5CF6] border-[#8B5CF6]'
                       : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
+                    }`}
                 >
                   Chat
                 </button>
                 <button
                   onClick={() => setActiveTab('images')}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === 'images'
-                      ? 'text-white border-blue-500'
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === 'images'
+                      ? 'text-[#8B5CF6] border-[#8B5CF6]'
                       : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
+                    }`}
                 >
                   Images
                 </button>
                 <button
                   onClick={() => setActiveTab('video')}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === 'video'
-                      ? 'text-white border-blue-500'
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === 'video'
+                      ? 'text-[#8B5CF6] border-[#8B5CF6]'
                       : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
+                    }`}
                 >
                   Video
                 </button>
                 <button
                   onClick={() => setActiveTab('audio')}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === 'audio'
-                      ? 'text-white border-blue-500'
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === 'audio'
+                      ? 'text-[#8B5CF6] border-[#8B5CF6]'
                       : 'text-white/50 border-transparent hover:text-white/70'
-                  }`}
+                    }`}
                 >
                   Audio
                 </button>
@@ -178,75 +176,68 @@ export const MainChatNew: React.FC = () => {
               <div className="space-y-3 max-w-2xl mx-auto">
                 <button
                   onClick={() => setActiveStudio('chat')}
-                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-[#3B82F6]/10 border border-white/10 hover:border-[#3B82F6]/50 rounded-xl transition-all text-left group"
                 >
-                  <div className="p-3 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
+                  <div className="p-3 bg-gradient-to-br from-[#3B82F6]/20 to-[#8B5CF6]/20 rounded-lg group-hover:from-[#3B82F6]/30 group-hover:to-[#8B5CF6]/30 transition-colors">
+                    <Sparkles className="w-5 h-5 text-[#3B82F6]" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-white/90">GPT-4 Turbo</h3>
-                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">NEW</span>
+                      <h3 className="text-sm font-semibold text-white/90 group-hover:text-[#3B82F6]">GPT-4 Turbo</h3>
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-[#3B82F6]/20 to-[#8B5CF6]/20 text-[#3B82F6] text-xs rounded-full border border-[#3B82F6]/30">HOT</span>
                     </div>
                     <p className="text-xs text-white/50">Advanced AI model with reasoning capabilities</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                      <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveStudio('image')}
-                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-[#8B5CF6]/10 border border-white/10 hover:border-[#8B5CF6]/50 rounded-xl transition-all text-left group"
                 >
-                  <div className="p-3 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
-                    <ImageIcon className="w-5 h-5 text-purple-400" />
+                  <div className="p-3 bg-gradient-to-br from-[#8B5CF6]/20 to-[#EC4899]/20 rounded-lg group-hover:from-[#8B5CF6]/30 group-hover:to-[#EC4899]/30 transition-colors">
+                    <ImageIcon className="w-5 h-5 text-[#8B5CF6]" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-white/90 mb-1">DALL-E 3</h3>
+                    <h3 className="text-sm font-semibold text-white/90 mb-1 group-hover:text-[#8B5CF6]">DALL-E 3</h3>
                     <p className="text-xs text-white/50">Generate high-quality images from text</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveStudio('video')}
-                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-[#06B6D4]/10 border border-white/10 hover:border-[#06B6D4]/50 rounded-xl transition-all text-left group"
                 >
-                  <div className="p-3 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
-                    <Video className="w-5 h-5 text-green-400" />
+                  <div className="p-3 bg-gradient-to-br from-[#06B6D4]/20 to-[#3B82F6]/20 rounded-lg group-hover:from-[#06B6D4]/30 group-hover:to-[#3B82F6]/30 transition-colors">
+                    <Video className="w-5 h-5 text-[#06B6D4]" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-white/90 mb-1">Sora</h3>
+                    <h3 className="text-sm font-semibold text-white/90 mb-1 group-hover:text-[#06B6D4]">Sora</h3>
                     <p className="text-xs text-white/50">Create videos from text descriptions</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveStudio('audio')}
-                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-[#F97316]/10 border border-white/10 hover:border-[#F97316]/50 rounded-xl transition-all text-left group"
                 >
-                  <div className="p-3 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
-                    <Music className="w-5 h-5 text-pink-400" />
+                  <div className="p-3 bg-gradient-to-br from-[#F97316]/20 to-[#EAB308]/20 rounded-lg group-hover:from-[#F97316]/30 group-hover:to-[#EAB308]/30 transition-colors">
+                    <Music className="w-5 h-5 text-[#F97316]" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-white/90 mb-1">Music Generator</h3>
+                    <h3 className="text-sm font-semibold text-white/90 mb-1 group-hover:text-[#F97316]">Music Generator</h3>
                     <p className="text-xs text-white/50">Generate music and audio</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveStudio('code')}
-                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-[#10B981]/10 border border-white/10 hover:border-[#10B981]/50 rounded-xl transition-all text-left group"
                 >
-                  <div className="p-3 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
-                    <FileCode className="w-5 h-5 text-cyan-400" />
+                  <div className="p-3 bg-gradient-to-br from-[#10B981]/20 to-[#06B6D4]/20 rounded-lg group-hover:from-[#10B981]/30 group-hover:to-[#06B6D4]/30 transition-colors">
+                    <FileCode className="w-5 h-5 text-[#10B981]" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-white/90 mb-1">Code Assistant</h3>
+                    <h3 className="text-sm font-semibold text-white/90 mb-1 group-hover:text-[#10B981]">Code Assistant</h3>
                     <p className="text-xs text-white/50">Build applications with AI</p>
                   </div>
                 </button>
@@ -266,7 +257,7 @@ export const MainChatNew: React.FC = () => {
                   rows={1}
                   style={{ minHeight: '44px', maxHeight: '200px' }}
                 />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#06B6D4] hover:opacity-90 rounded-lg transition-all">
                   <Send className="w-4 h-4" />
                 </button>
               </div>

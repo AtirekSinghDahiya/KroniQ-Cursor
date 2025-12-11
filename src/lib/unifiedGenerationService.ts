@@ -1,5 +1,5 @@
-import { checkGenerationLimit, incrementGenerationCount, GenerationType } from './generationLimitsService';
-import { deductTokensForRequest } from './tokenService';
+import { checkGenerationLimit, GenerationType } from './generationLimitsService';
+// import { deductTokensForRequest } from './tokenService';
 import { getModelCost } from './modelTokenPricing';
 import { getUserTier } from './userTierService';
 
@@ -16,6 +16,7 @@ export interface GenerationOptions {
   generationType: GenerationType;
   modelId: string;
   provider: string;
+  customCost?: number; // Optional override for dynamic pricing
   onProgress?: (message: string) => void;
 }
 
@@ -23,7 +24,7 @@ export async function executeGeneration<T>(
   options: GenerationOptions,
   generationFn: () => Promise<T>
 ): Promise<GenerationResult<T>> {
-  const { userId, generationType, modelId, provider, onProgress } = options;
+  const { userId, generationType, modelId, provider, customCost, onProgress } = options;
 
   try {
     onProgress?.('Checking generation limits...');
@@ -42,10 +43,13 @@ export async function executeGeneration<T>(
     const tierInfo = await getUserTier(userId);
     const modelCost = getModelCost(modelId);
 
-    if (tierInfo.isPremium && tierInfo.totalTokens < modelCost.costPerMessage) {
+    // Use custom cost if provided, otherwise fallback to model default (tokens)
+    const finalCost = customCost !== undefined ? customCost : (modelCost.tokensPerMessage || 1000);
+
+    if (tierInfo.isPremium && tierInfo.tokenBalance < finalCost) {
       return {
         success: false,
-        error: `Insufficient tokens. This generation requires ${modelCost.costPerMessage.toLocaleString()} tokens, but you have ${tierInfo.totalTokens.toLocaleString()} tokens remaining.`,
+        error: `Insufficient tokens. This generation requires ${finalCost.toLocaleString()} tokens, but you have ${tierInfo.tokenBalance.toLocaleString()} tokens remaining.`,
         insufficientTokens: true
       };
     }
@@ -54,17 +58,35 @@ export async function executeGeneration<T>(
 
     const result = await generationFn();
 
-    onProgress?.('Updating usage...');
+    // Token deduction and count increment should not fail the generation
+    // since the content was already generated successfully
+    try {
+      onProgress?.('Updating usage...');
 
-    await deductTokensForRequest(
-      userId,
-      modelId,
-      provider,
-      modelCost.costPerMessage,
-      generationType
-    );
+      // Use Firebase for token deduction and usage tracking
+      const { deductTokens, incrementUsage } = await import('./firestoreService');
 
-    await incrementGenerationCount(userId, generationType);
+      console.log(`💰 [Token Deduction] Deducting ${finalCost} tokens for user ${userId}`);
+      const deductSuccess = await deductTokens(userId, finalCost);
+      console.log(`💰 [Token Deduction] Result: ${deductSuccess ? 'SUCCESS' : 'FAILED'}`);
+
+      // Map generation type to feature type
+      const featureTypeMap: Record<GenerationType, 'image' | 'video' | 'music' | 'tts' | 'ppt'> = {
+        image: 'image',
+        video: 'video',
+        song: 'music',
+        tts: 'tts',
+        ppt: 'ppt'
+      };
+      const featureType = featureTypeMap[generationType];
+
+      console.log(`📊 [Usage Increment] Incrementing ${featureType} usage for user ${userId}`);
+      const incrementSuccess = await incrementUsage(userId, featureType, 1);
+      console.log(`📊 [Usage Increment] Result: ${incrementSuccess ? 'SUCCESS' : 'FAILED'}`);
+    } catch (usageError) {
+      // Log the error but don't fail the generation since content was created
+      console.error('❌ [Usage Tracking] Failed but generation succeeded:', usageError);
+    }
 
     onProgress?.('Complete!');
 

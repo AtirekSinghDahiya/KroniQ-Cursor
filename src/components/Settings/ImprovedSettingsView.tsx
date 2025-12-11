@@ -289,7 +289,7 @@ export const ImprovedSettingsView: React.FC = () => {
 
           <div className="glass-panel rounded-2xl p-6 border border-white/10 backdrop-blur-xl">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500/30 to-cyan-500/30 flex items-center justify-center border border-white/20">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-pink-500/30 to-purple-500/30 flex items-center justify-center border border-white/20">
                 <Shield className="w-5 h-5 text-blue-400" />
               </div>
               <h2 className="text-xl font-bold text-white">Privacy & Security</h2>

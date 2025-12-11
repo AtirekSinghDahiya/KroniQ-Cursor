@@ -1,5 +1,6 @@
-import { getPricePerMillionTokens, getModelPricing } from './modelPricing';
-import { AI_MODELS, getModelById } from './aiModels';
+import { getPricePerMillionTokens } from './modelPricing';
+import { getModelById } from './aiModels';
+
 
 export interface ModelTokenCost {
   id: string;
@@ -391,17 +392,6 @@ export const MODEL_TOKEN_COSTS: Record<string, ModelTokenCost> = {
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg',
     paidOnly: true
   },
-  'veo3': {
-    id: 'veo3',
-    name: 'Veo 3 Fast',
-    provider: 'Google',
-    tokensPerMessage: 150000,
-    costPerMessage: 0.075,
-    tier: 'premium',
-    description: 'Google\'s fast video generation',
-    icon: '🎥',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
-  },
   'eleven-labs': {
     id: 'eleven-labs',
     name: 'ElevenLabs',
@@ -411,6 +401,90 @@ export const MODEL_TOKEN_COSTS: Record<string, ModelTokenCost> = {
     tier: 'mid',
     description: 'Natural voice synthesis',
     icon: '🎙️',
+    logoUrl: 'https://github.com/elevenlabs.png'
+  },
+  // Studio-specific models
+  'ppt-generator': {
+    id: 'ppt-generator',
+    name: 'PPT Generator',
+    provider: 'KroniQ',
+    tokensPerMessage: 5000,  // Base tokens for PPT generation
+    costPerMessage: 0.015,
+    tier: 'mid',
+    description: 'AI-powered presentation generation',
+    icon: '📊'
+  },
+  'kling': {
+    id: 'kling',
+    name: 'Kling 2.6',
+    provider: 'Kling',
+    tokensPerMessage: 20000,
+    costPerMessage: 0.05,
+    tier: 'mid',
+    description: 'Realistic video generation',
+    icon: '🎥'
+  },
+  'wan': {
+    id: 'wan',
+    name: 'Wan 2.5',
+    provider: 'Wan',
+    tokensPerMessage: 18000,
+    costPerMessage: 0.045,
+    tier: 'mid',
+    description: 'Creative video generation',
+    icon: '🎬'
+  },
+  'sora-2': {
+    id: 'sora-2',
+    name: 'Sora 2',
+    provider: 'OpenAI',
+    tokensPerMessage: 25000,
+    costPerMessage: 0.06,
+    tier: 'premium',
+    description: 'Cinematic video generation',
+    icon: '🎥',
+    paidOnly: true
+  },
+
+  'suno-ai': {
+    id: 'suno-ai',
+    name: 'Suno AI Music',
+    provider: 'Suno',
+    tokensPerMessage: 10000,
+    costPerMessage: 0.025,
+    tier: 'mid',
+    description: 'AI music generation',
+    icon: '🎵'
+  },
+  'grok': { // Grok Video
+    id: 'grok',
+    name: 'Grok Video',
+    provider: 'xAI',
+    tokensPerMessage: 18000,
+    costPerMessage: 0.045,
+    tier: 'mid',
+    description: 'Grok video generation',
+    icon: '⚡'
+  },
+  'music-generation': {
+    id: 'music-generation',
+    name: 'Music Generation',
+    provider: 'KroniQ',
+    tokensPerMessage: 25000,  // Music takes significant compute
+    costPerMessage: 0.06,
+    tier: 'premium',
+    description: 'AI music generation',
+    icon: '🎵'
+  },
+  'elevenlabs': {
+    id: 'elevenlabs',
+    name: 'ElevenLabs TTS',
+    provider: 'ElevenLabs',
+    tokensPerMessage: 10000,  // Base for TTS
+    costPerMessage: 0.025,
+    tier: 'mid',
+    description: 'Text to speech synthesis',
+    icon: '🗣️',
     logoUrl: 'https://github.com/elevenlabs.png'
   },
   // New OpenAI GPT-5 Models
@@ -621,8 +695,323 @@ export const MODEL_TOKEN_COSTS: Record<string, ModelTokenCost> = {
     description: 'Automatically picks best model',
     icon: '🎛️',
     logoUrl: 'https://openrouter.ai/favicon-32x32.png'
+  },
+
+  // ===== NEW GROK MODELS =====
+  'x-ai/grok-4': {
+    id: 'x-ai/grok-4',
+    name: 'Grok 4',
+    provider: 'xAI',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.09,
+    tier: 'premium',
+    description: 'Latest Grok flagship model',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+  'x-ai/grok-4.1': {
+    id: 'x-ai/grok-4.1',
+    name: 'Grok 4.1',
+    provider: 'xAI',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.09,
+    tier: 'premium',
+    description: 'Enhanced Grok 4 model',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+  'x-ai/grok-4-fast': {
+    id: 'x-ai/grok-4-fast',
+    name: 'Grok 4 Fast',
+    provider: 'xAI',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.0035,
+    tier: 'budget',
+    description: 'Ultra-fast Grok model',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+  'x-ai/grok-4.1-fast': {
+    id: 'x-ai/grok-4.1-fast',
+    name: 'Grok 4.1 Fast',
+    provider: 'xAI',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.0035,
+    tier: 'budget',
+    description: 'Latest fast Grok model',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+
+  // ===== NEW GPT MODELS =====
+  'openai/gpt-5': {
+    id: 'openai/gpt-5',
+    name: 'GPT-5',
+    provider: 'OpenAI',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.056,
+    tier: 'premium',
+    description: 'Latest flagship GPT model',
+    icon: '🤖',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg'
+  },
+
+  // ===== NEW CLAUDE MODELS =====
+  'anthropic/claude-opus-4.5': {
+    id: 'anthropic/claude-opus-4.5',
+    name: 'Claude Opus 4.5',
+    provider: 'Anthropic',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.15,
+    tier: 'ultra-premium',
+    description: 'Latest Claude flagship',
+    icon: '👑',
+    logoUrl: 'https://github.com/anthropics.png'
+  },
+
+  // ===== NEW GEMINI MODELS =====
+  'google/gemini-3-pro': {
+    id: 'google/gemini-3-pro',
+    name: 'Gemini 3 Pro',
+    provider: 'Google',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.07,
+    tier: 'ultra-premium',
+    description: 'Latest Gemini flagship',
+    icon: '✨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'google/gemini-3-pro-extended': {
+    id: 'google/gemini-3-pro-extended',
+    name: 'Gemini 3 Pro Extended',
+    provider: 'Google',
+    tokensPerMessage: 1000, // Dynamic from OpenRouter
+    costPerMessage: 0.11,
+    tier: 'ultra-premium',
+    description: 'Extended context Gemini 3',
+    icon: '✨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+
+  // ===== IMAGE GENERATION MODELS =====
+  'flux-kontext-pro': {
+    id: 'flux-kontext-pro',
+    name: 'Flux Kontext Pro',
+    provider: 'Kie AI',
+    tokensPerMessage: 5000,
+    costPerMessage: 0.015,
+    tier: 'mid',
+    description: 'High-quality image generation',
+    icon: '🖼️'
+  },
+  'gpt-4o-image': {
+    id: 'gpt-4o-image',
+    name: 'GPT-4o Image',
+    provider: 'OpenAI',
+    tokensPerMessage: 8000,
+    costPerMessage: 0.02,
+    tier: 'premium',
+    description: 'OpenAI GPT-4o image generation',
+    icon: '🎨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg'
+  },
+  'nano-banana': {
+    id: 'nano-banana',
+    name: 'Nano Banana',
+    provider: 'Kie AI',
+    tokensPerMessage: 3000,
+    costPerMessage: 0.008,
+    tier: 'budget',
+    description: 'Fast image generation',
+    icon: '🍌'
+  },
+  'imagen-4-ultra': {
+    id: 'imagen-4-ultra',
+    name: 'Imagen 4 Ultra',
+    provider: 'Google',
+    tokensPerMessage: 10000,
+    costPerMessage: 0.025,
+    tier: 'premium',
+    description: 'Google Imagen 4 Ultra',
+    icon: '✨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'seekdream-4.5': {
+    id: 'seekdream-4.5',
+    name: 'SeekDream 4.5',
+    provider: 'Kie AI',
+    tokensPerMessage: 4000,
+    costPerMessage: 0.01,
+    tier: 'budget',
+    description: 'Fast creative images',
+    icon: '💭'
+  },
+  'grok-imagine': {
+    id: 'grok-imagine',
+    name: 'Grok Imagine',
+    provider: 'xAI',
+    tokensPerMessage: 6000,
+    costPerMessage: 0.018,
+    tier: 'mid',
+    description: 'Grok image generation',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+
+  // ===== IMAGE MODELS (Exact IDs from ImageStudio) =====
+  '4o-image': {
+    id: '4o-image',
+    name: 'GPT-4o Image',
+    provider: 'OpenAI',
+    tokensPerMessage: 8000,
+    costPerMessage: 0.02,
+    tier: 'premium',
+    description: 'OpenAI GPT-4o image generation',
+    icon: '🎨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg'
+  },
+  'google/nano-banana': {
+    id: 'google/nano-banana',
+    name: 'Nano Banana',
+    provider: 'Google',
+    tokensPerMessage: 3000,
+    costPerMessage: 0.008,
+    tier: 'budget',
+    description: 'Fast Gemini-powered generation',
+    icon: '🍌',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'google/imagen4-ultra': {
+    id: 'google/imagen4-ultra',
+    name: 'Imagen 4 Ultra',
+    provider: 'Google',
+    tokensPerMessage: 10000,
+    costPerMessage: 0.025,
+    tier: 'premium',
+    description: 'Ultra-realistic Google Imagen 4',
+    icon: '✨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'seedream/4.5': {
+    id: 'seedream/4.5',
+    name: 'Seedream 4.5',
+    provider: 'Kie AI',
+    tokensPerMessage: 4000,
+    costPerMessage: 0.01,
+    tier: 'budget',
+    description: 'Artistic and creative generation',
+    icon: '💭'
+  },
+  'grok-imagine/text-to-image': {
+    id: 'grok-imagine/text-to-image',
+    name: 'Grok Imagine',
+    provider: 'xAI',
+    tokensPerMessage: 6000,
+    costPerMessage: 0.018,
+    tier: 'mid',
+    description: 'Grok-powered image generation',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
+  },
+
+  // ===== VIDEO MODELS (Reasonable pricing: 15K-30K tokens per video) =====
+  'runway-generate-5s-720p': {
+    id: 'runway-generate-5s-720p',
+    name: 'Runway Gen3 5s 720p',
+    provider: 'Runway',
+    tokensPerMessage: 15000,
+    costPerMessage: 0.04,
+    tier: 'mid',
+    description: '5 second 720p video generation',
+    icon: '🎬'
+  },
+  'runway-generate-10s-720p': {
+    id: 'runway-generate-10s-720p',
+    name: 'Runway Gen3 10s 720p',
+    provider: 'Runway',
+    tokensPerMessage: 25000,
+    costPerMessage: 0.06,
+    tier: 'premium',
+    description: '10 second 720p video generation',
+    icon: '🎬'
+  },
+  'runway-gen3': {
+    id: 'runway-gen3',
+    name: 'Runway Gen-3',
+    provider: 'Runway',
+    tokensPerMessage: 20000,
+    costPerMessage: 0.05,
+    tier: 'mid',
+    description: 'Professional video generation',
+    icon: '🎞️'
+  },
+  'veo3_fast': {
+    id: 'veo3_fast',
+    name: 'Veo 3.1 Fast',
+    provider: 'Google',
+    tokensPerMessage: 15000,
+    costPerMessage: 0.04,
+    tier: 'budget',
+    description: 'Fast video generation',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'veo3': {
+    id: 'veo3',
+    name: 'Veo 3.1 Quality',
+    provider: 'Google',
+    tokensPerMessage: 20000,
+    costPerMessage: 0.05,
+    tier: 'mid',
+    description: 'High quality video generation',
+    icon: '✨',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg'
+  },
+  'sora-2-text-to-video': {
+    id: 'sora-2-text-to-video',
+    name: 'Sora 2',
+    provider: 'OpenAI',
+    tokensPerMessage: 25000,
+    costPerMessage: 0.06,
+    tier: 'premium',
+    description: 'Cinematic video generation',
+    icon: '🎬',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg',
+    paidOnly: true
+  },
+  'wan/2-5-text-to-video': {
+    id: 'wan/2-5-text-to-video',
+    name: 'Wan 2.5',
+    provider: 'Wan',
+    tokensPerMessage: 18000,
+    costPerMessage: 0.045,
+    tier: 'mid',
+    description: 'Creative video generation',
+    icon: '🎬'
+  },
+  'kling-2.6/text-to-video': {
+    id: 'kling-2.6/text-to-video',
+    name: 'Kling 2.6',
+    provider: 'Kling',
+    tokensPerMessage: 20000,
+    costPerMessage: 0.05,
+    tier: 'mid',
+    description: 'Realistic video generation',
+    icon: '🎥'
+  },
+  'grok-imagine/text-to-video': {
+    id: 'grok-imagine/text-to-video',
+    name: 'Grok Video',
+    provider: 'xAI',
+    tokensPerMessage: 18000,
+    costPerMessage: 0.045,
+    tier: 'mid',
+    description: 'Grok video generation',
+    icon: '⚡',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/X_logo_2023.svg'
   }
 };
+
 
 export function getModelCost(modelId: string): ModelTokenCost {
   // First check MODEL_TOKEN_COSTS
@@ -632,15 +1021,18 @@ export function getModelCost(modelId: string): ModelTokenCost {
   if (!cost) {
     const aiModel = getModelById(modelId);
     if (aiModel) {
+      // NOTE: tokensPerMessage is now dynamic from OpenRouter (usage.total_cost * 2 * 1000000)
+      // This is just a fallback for display purposes
       cost = {
         id: aiModel.id,
         name: aiModel.name,
         provider: aiModel.provider,
-        tokensPerMessage: aiModel.tokensPerMessage || 1000,
+        tokensPerMessage: 1000, // Fallback - actual cost comes from OpenRouter
         costPerMessage: 0.01,
         tier: (aiModel.tier?.toLowerCase() || 'mid') as 'free' | 'budget' | 'mid' | 'premium' | 'ultra-premium',
         description: aiModel.description,
         icon: getProviderIcon(aiModel.provider),
+        logoUrl: aiModel.logoUrl,
       };
     } else {
       // Ultimate fallback
@@ -648,7 +1040,7 @@ export function getModelCost(modelId: string): ModelTokenCost {
         id: modelId,
         name: modelId,
         provider: 'Unknown',
-        tokensPerMessage: 1000,
+        tokensPerMessage: 1000, // Fallback - actual cost comes from OpenRouter
         costPerMessage: 0.01,
         tier: 'mid',
         description: 'Unknown model',
@@ -662,6 +1054,7 @@ export function getModelCost(modelId: string): ModelTokenCost {
 
   return cost;
 }
+
 
 function getProviderIcon(provider: string): string {
   const icons: Record<string, string> = {

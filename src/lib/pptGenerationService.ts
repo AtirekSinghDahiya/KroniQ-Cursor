@@ -1,17 +1,19 @@
 import { getOpenRouterResponse } from './openRouterService';
 import PptxGenJS from 'pptxgenjs';
+import { getThemeColors } from './pptThemeIntelligence';
 
 export interface SlideContent {
   title: string;
   content: string[];
   notes?: string;
   layout?: 'title' | 'content' | 'section' | 'two-column' | 'big-number' | 'quote' | 'conclusion' | 'title_slide' | 'content_slide' | 'data_visualization' | 'comparison_matrix' | 'timeline_flow' | 'executive_summary' | 'market_analysis' | 'competitive_landscape' | 'financial_projection' | 'conclusion_call_to_action';
+  backgroundImage?: string;
 }
 
 export interface PPTGenerationOptions {
   topic: string;
   slideCount: number;
-  theme: 'professional' | 'modern' | 'creative' | 'minimal';
+  theme: string; // Now accepts any theme from pptThemeIntelligence
   includeImages?: boolean;
 }
 
@@ -22,62 +24,227 @@ export interface GeneratedPPT {
   theme: string;
 }
 
+// Classify the presentation type based on the topic
+function classifyPresentationType(topic: string): 'educational' | 'business' | 'research' | 'creative' | 'technical' {
+  const lowerTopic = topic.toLowerCase();
+
+  // Educational keywords
+  const educationalKeywords = [
+    'what is', 'how does', 'explain', 'learn', 'teach', 'study', 'history of',
+    'introduction to', 'basics of', 'fundamentals', 'theory', 'science', 'physics',
+    'chemistry', 'biology', 'mathematics', 'geography', 'astronomy', 'black hole',
+    'universe', 'evolution', 'climate', 'ecosystem', 'anatomy', 'literature',
+    'philosophy', 'psychology', 'sociology', 'economics basics', 'world war',
+    'ancient', 'civilization', 'art history', 'music theory', 'language'
+  ];
+
+  // Business keywords
+  const businessKeywords = [
+    'pitch', 'investor', 'startup', 'business model', 'revenue', 'market size',
+    'tam', 'sam', 'som', 'funding', 'investment', 'company', 'enterprise',
+    'b2b', 'b2c', 'saas', 'strategy', 'growth', 'roi', 'kpi', 'metrics',
+    'sales', 'marketing', 'product launch', 'quarterly', 'annual report'
+  ];
+
+  // Research keywords
+  const researchKeywords = [
+    'research', 'study', 'analysis', 'findings', 'methodology', 'hypothesis',
+    'conclusion', 'data', 'survey', 'experiment', 'thesis', 'dissertation',
+    'academic', 'paper', 'journal', 'peer review', 'statistics'
+  ];
+
+  // Technical keywords
+  const technicalKeywords = [
+    'api', 'code', 'programming', 'software', 'architecture', 'database',
+    'algorithm', 'framework', 'devops', 'cloud', 'infrastructure', 'machine learning',
+    'ai', 'artificial intelligence', 'neural network', 'blockchain', 'cybersecurity'
+  ];
+
+  // Check each category
+  for (const keyword of businessKeywords) {
+    if (lowerTopic.includes(keyword)) return 'business';
+  }
+
+  for (const keyword of technicalKeywords) {
+    if (lowerTopic.includes(keyword)) return 'technical';
+  }
+
+  for (const keyword of researchKeywords) {
+    if (lowerTopic.includes(keyword)) return 'research';
+  }
+
+  for (const keyword of educationalKeywords) {
+    if (lowerTopic.includes(keyword)) return 'educational';
+  }
+
+  // Default to educational for general topics
+  return 'educational';
+}
+
+// Get appropriate prompt based on presentation type
+function getPresentationPrompt(topic: string, slideCount: number, theme: string, type: string): string {
+  const baseRequirements = `
+**CRITICAL JSON FORMAT - MUST RETURN VALID JSON:**
+{
+  "title": "Your Title Here",
+  "subtitle": "Subtitle Here",
+  "theme": "${theme}",
+  "slides": [
+    {
+      "title": "Slide Title",
+      "content": ["Point 1", "Point 2", "Point 3", "Point 4"],
+      "notes": "Speaker notes",
+      "layout": "content_slide"
+    }
+  ]
+}
+
+**AVAILABLE LAYOUTS (use variety):**
+- "title_slide": Opening slide (use for slide 1)
+- "content_slide": Standard bullet points
+- "section": Bold section divider
+- "big-number": Highlight key fact/statistic
+- "two-column": Compare/contrast
+- "data_visualization": Charts/metrics focus
+- "timeline_flow": Chronological/process
+- "conclusion": Final slide (use for last slide)`;
+
+  if (type === 'educational') {
+    return `You are an expert educator and presentation designer. Create an informative, engaging educational presentation about "${topic}" with exactly ${slideCount} slides.
+
+**GOAL:** Teach the audience about ${topic} in a clear, structured way. Make complex concepts understandable.
+
+**STRUCTURE FOR EDUCATIONAL PRESENTATION:**
+1. **Title Slide**: Engaging title about the topic
+2. **Introduction**: What is ${topic}? Brief overview
+3. **Key Concepts**: Core ideas and definitions
+4. **Deep Dive**: Detailed explanation of main aspects
+5. **Examples/Facts**: Real-world examples, interesting facts
+6. **How It Works**: Process, mechanism, or system explained
+7. **Importance/Impact**: Why does this matter?
+8. **Applications**: Where is this used/relevant?
+9. **Fun Facts**: Surprising or interesting information
+10. **Summary**: Key takeaways and conclusions
+
+**CONTENT REQUIREMENTS:**
+- Use FACTUAL, ACCURATE information
+- Include specific numbers, dates, measurements where relevant
+- Use clear, educational language
+- Add interesting facts to engage the audience
+- Each bullet should be informative and substantive
+- NO business jargon or investor language
+
+${baseRequirements}`;
+  }
+
+  if (type === 'business') {
+    return `You are an elite McKinsey presentation designer. Create a stunning investor pitch deck about "${topic}" with exactly ${slideCount} slides.
+
+**STRUCTURE FOR BUSINESS PITCH:**
+1. **Title Slide**: Company name and tagline
+2. **Problem**: Market pain point
+3. **Solution**: Your offering
+4. **Market Size**: TAM/SAM/SOM
+5. **Product**: Features and benefits
+6. **Business Model**: Revenue streams
+7. **Traction**: Key metrics
+8. **Competition**: Competitive advantage
+9. **Team**: Key people
+10. **Ask**: Investment needed
+
+**CONTENT REQUIREMENTS:**
+- Include metrics: "$XX.XM", "XX%", "XXx"
+- Power words: "Disrupt", "10x", "First-ever"
+- Specific numbers and data points
+- Professional, confident tone
+
+${baseRequirements}`;
+  }
+
+  if (type === 'research') {
+    return `You are an academic research presentation expert. Create a professional research presentation about "${topic}" with exactly ${slideCount} slides.
+
+**STRUCTURE FOR RESEARCH:**
+1. **Title Slide**: Research title and authors
+2. **Abstract**: Brief overview
+3. **Background**: Context and literature
+4. **Methodology**: Research approach
+5. **Data/Analysis**: Key findings
+6. **Results**: Main outcomes
+7. **Discussion**: Interpretation
+8. **Limitations**: Scope boundaries
+9. **Future Work**: Next steps
+10. **Conclusion**: Summary and implications
+
+**CONTENT REQUIREMENTS:**
+- Academic tone
+- Data-driven points
+- Cite methodology
+- Clear structure
+
+${baseRequirements}`;
+  }
+
+  if (type === 'technical') {
+    return `You are a technical documentation expert. Create a clear technical presentation about "${topic}" with exactly ${slideCount} slides.
+
+**STRUCTURE FOR TECHNICAL:**
+1. **Title Slide**: Technology/system name
+2. **Overview**: What it is
+3. **Architecture**: System design
+4. **Components**: Key parts
+5. **How It Works**: Technical flow
+6. **Features**: Capabilities
+7. **Implementation**: How to use
+8. **Best Practices**: Recommendations
+9. **Challenges**: Known issues
+10. **Next Steps**: Roadmap
+
+**CONTENT REQUIREMENTS:**
+- Technical accuracy
+- Clear terminology
+- Logical flow
+- Practical examples
+
+${baseRequirements}`;
+  }
+
+  // Default creative/general
+  return `You are a creative presentation designer. Create an engaging, visually-oriented presentation about "${topic}" with exactly ${slideCount} slides.
+
+**STRUCTURE:**
+1. **Title Slide**: Creative, attention-grabbing title
+2. **Introduction**: Hook the audience
+3. **Main Content**: 6-8 slides of key information
+4. **Conclusion**: Memorable takeaway
+
+**CONTENT REQUIREMENTS:**
+- Engaging and creative
+- Visual-first mindset
+- Clear messaging
+- Memorable points
+
+${baseRequirements}`;
+}
+
 export async function generatePPTContent(options: PPTGenerationOptions): Promise<GeneratedPPT> {
   const { topic, slideCount, theme } = options;
 
   console.log('🎯 Generating PPT content:', { topic, slideCount, theme });
 
-  const prompt = `Create an exceptional, visually stunning presentation about "${topic}" with exactly ${slideCount} slides. Design for maximum visual impact and executive-level communication.
+  // Step 1: Classify the presentation type
+  const presentationType = classifyPresentationType(topic);
+  console.log('📊 Detected presentation type:', presentationType);
 
-**CRITICAL DESIGN REQUIREMENTS:**
-1. **Premium Visual Design**: Each slide must have sophisticated design elements, gradients, professional layouts
-2. **Executive-Level Content**: Focus on strategic insights, data-driven content, compelling narratives
-3. **Modern Aesthetics**: Use ${theme} theme with contemporary design principles
-
-**SLIDE STRUCTURE:**
-For each slide, provide:
-1. **Title**: Impactful, memorable headline (max 8 words)
-2. **Content**: 3-6 strategic bullet points with metrics, insights, or key takeaways
-3. **Visual Elements**: Describe premium design features (charts, icons, gradients, layouts)
-4. **Speaker Notes**: 3-4 sentences with deep strategic analysis
-5. **Layout**: Choose from: title_slide, content_slide, data_visualization, executive_summary, competitive_landscape, market_analysis, conclusion
-
-**CONTENT FRAMEWORK:**
-- **Title Slide**: Hero design with compelling hook
-- **Content Slides**: Mix of data visualization, strategic insights, competitive analysis
-- **Executive Summary**: High-level overview with key metrics
-- **Conclusion**: Strong call-to-action with memorable close
-
-**VISUAL EXCELLENCE:**
-- Use professional color schemes matching ${theme}
-- Incorporate data visualizations and strategic frameworks
-- Ensure visual hierarchy with proper typography
-- Include premium design elements (gradients, shadows, overlays)
-
-Return in this exact JSON format:
-{
-  "title": "Premium Executive Presentation Title",
-  "subtitle": "Strategic Intelligence & Market Leadership",
-  "theme": "${theme}",
-  "design_style": "premium_executive",
-  "slides": [
-    {
-      "title": "Executive Strategic Overview",
-      "content": ["Market opportunity: $X.XB TAM with XX% CAGR", "Competitive differentiation through proprietary technology", "Projected ROI: XXX% IRR with X-year payback"],
-      "visual_elements": "Large hero image with gradient overlay, KPI dashboard, executive portrait styling",
-      "notes": "This presentation represents a comprehensive strategic analysis of the ${topic} market opportunity. Our research indicates a $X.X billion total addressable market with accelerated growth driven by digital transformation trends.",
-      "layout": "title_slide",
-      "design_complexity": "high"
-    }
-  ]
-}`;
+  // Step 2: Get the appropriate prompt
+  const prompt = getPresentationPrompt(topic, slideCount, theme, presentationType);
 
   try {
     const response = await getOpenRouterResponse(
       prompt,
       [],
       undefined,
-      'kimi-k2'
+      'deepseek-chat-v3-0324' // Using DeepSeek for better educational content
     );
 
     console.log('✅ Received AI response');
@@ -94,7 +261,7 @@ Return in this exact JSON format:
     } catch (parseError) {
       console.error('❌ Failed to parse AI response:', parseError);
       console.log('Using fallback PPT generation');
-      pptData = createFallbackPPT(topic, slideCount);
+      pptData = createFallbackPPT(topic, slideCount, presentationType);
     }
 
     // Ensure exact slide count
@@ -102,10 +269,10 @@ Return in this exact JSON format:
       const additionalNeeded = slideCount - pptData.slides.length;
       for (let i = 0; i < additionalNeeded; i++) {
         pptData.slides.splice(pptData.slides.length - 1, 0, {
-          title: `Key Point ${pptData.slides.length}`,
-          content: ['Strategic insight', 'Implementation detail', 'Success metric', 'Action item'],
-          notes: 'Additional speaker notes',
-          layout: 'content'
+          title: `Additional Information ${i + 1}`,
+          content: ['Key point about ' + topic, 'Important detail', 'Relevant example', 'Supporting fact'],
+          notes: 'Additional content',
+          layout: 'content_slide'
         });
       }
     } else if (pptData.slides.length > slideCount) {
@@ -118,43 +285,90 @@ Return in this exact JSON format:
   } catch (error) {
     console.error('❌ Error generating PPT content:', error);
     console.log('⚠️ Using emergency fallback for PPT');
-    return createFallbackPPT(topic, slideCount);
+    return createFallbackPPT(topic, slideCount, classifyPresentationType(topic));
   }
 }
 
-function createFallbackPPT(topic: string, slideCount: number): GeneratedPPT {
+function createFallbackPPT(topic: string, slideCount: number, type: string = 'educational'): GeneratedPPT {
   const slides: SlideContent[] = [];
+
+  // Get appropriate subtitle based on type
+  const subtitles: Record<string, string> = {
+    educational: 'Educational Presentation',
+    business: 'Business Proposal',
+    research: 'Research Findings',
+    technical: 'Technical Overview',
+    creative: 'Creative Presentation'
+  };
 
   // Slide 1: Title slide
   slides.push({
     title: topic,
-    content: ['Investor Pitch Deck', 'Powered by KroniQ AI'],
+    content: [subtitles[type] || 'Presentation', 'Powered by KroniQ AI'],
     notes: `Professional presentation about ${topic}`,
-    layout: 'title'
+    layout: 'title_slide'
   });
 
   // Calculate content slides needed (total - title - conclusion)
   const contentSlidesNeeded = slideCount - 2;
 
-  const pitchSections = [
-    { title: 'The Problem', content: ['Market pain points', 'Current solutions falling short', 'Gap in the market', 'Customer struggles'], layout: 'content' },
-    { title: 'Our Solution', content: ['Innovative approach', 'Key differentiators', 'Technology advantage', 'Customer benefits'], layout: 'content' },
-    { title: 'Market Opportunity', content: ['Total addressable market (TAM)', 'Target customer segments', 'Market growth trends', 'Competitive positioning'], layout: 'big-number' },
-    { title: 'Business Model', content: ['Revenue streams', 'Pricing strategy', 'Customer acquisition', 'Unit economics'], layout: 'content' },
-    { title: 'Product Overview', content: ['Core features', 'User experience', 'Technical innovation', 'Roadmap highlights'], layout: 'content' },
-    { title: 'Traction & Metrics', content: ['Customer growth', 'Revenue milestones', 'Key partnerships', 'Market validation'], layout: 'big-number' },
-    { title: 'Go-to-Market Strategy', content: ['Distribution channels', 'Marketing approach', 'Sales process', 'Growth tactics'], layout: 'content' },
-    { title: 'Competitive Landscape', content: ['Main competitors', 'Our advantages', 'Barriers to entry', 'Market positioning'], layout: 'two-column' },
-    { title: 'The Team', content: ['Founders & expertise', 'Advisory board', 'Key hires', 'Company culture'], layout: 'content' },
-    { title: 'Financial Projections', content: ['Revenue forecast', 'Cost structure', 'Profitability timeline', 'Key assumptions'], layout: 'big-number' },
-    { title: 'Funding Ask', content: ['Investment needed', 'Use of funds', 'Milestones to achieve', 'Expected outcomes'], layout: 'section' },
-    { title: 'Investment Highlights', content: ['Strong value proposition', 'Proven market demand', 'Experienced team', 'Clear path to scale'], layout: 'content' },
-    { title: 'Risk Mitigation', content: ['Identified risks', 'Mitigation strategies', 'Contingency plans', 'Market resilience'], layout: 'content' }
-  ];
+  // Different sections based on presentation type
+  const sectionsByType: Record<string, Array<{ title: string; content: string[]; layout: string }>> = {
+    educational: [
+      { title: 'Introduction', content: [`What is ${topic}?`, 'Brief overview and context', 'Why this topic matters', 'Learning objectives'], layout: 'content_slide' },
+      { title: 'Key Concepts', content: ['Core idea #1', 'Core idea #2', 'Core idea #3', 'How they connect'], layout: 'content_slide' },
+      { title: 'Important Facts', content: ['Interesting fact about the topic', 'Key statistic', 'Real-world example', 'Common misconception'], layout: 'big-number' },
+      { title: 'How It Works', content: ['Step 1: Process begins', 'Step 2: Development', 'Step 3: Outcome', 'Key mechanisms'], layout: 'timeline_flow' },
+      { title: 'Real-World Examples', content: ['Example 1: Application', 'Example 2: Use case', 'Example 3: Impact', 'Lessons learned'], layout: 'two-column' },
+      { title: 'Why It Matters', content: ['Impact on daily life', 'Future implications', 'Global significance', 'Personal relevance'], layout: 'content_slide' },
+      { title: 'Fun Facts', content: ['Surprising fact #1', 'Surprising fact #2', 'Little-known detail', 'Interesting trivia'], layout: 'big-number' },
+      { title: 'Key Takeaways', content: ['Main learning point 1', 'Main learning point 2', 'Main learning point 3', 'Remember this'], layout: 'content_slide' }
+    ],
+    business: [
+      { title: 'The Problem', content: ['Market pain points', 'Current solutions falling short', 'Gap in the market', 'Customer struggles'], layout: 'content_slide' },
+      { title: 'Our Solution', content: ['Innovative approach', 'Key differentiators', 'Technology advantage', 'Customer benefits'], layout: 'content_slide' },
+      { title: 'Market Opportunity', content: ['Total addressable market', 'Target customer segments', 'Market growth trends', 'Competitive positioning'], layout: 'big-number' },
+      { title: 'Business Model', content: ['Revenue streams', 'Pricing strategy', 'Customer acquisition', 'Unit economics'], layout: 'content_slide' },
+      { title: 'Traction & Metrics', content: ['Customer growth', 'Revenue milestones', 'Key partnerships', 'Market validation'], layout: 'big-number' },
+      { title: 'Competitive Landscape', content: ['Main competitors', 'Our advantages', 'Barriers to entry', 'Market positioning'], layout: 'two-column' },
+      { title: 'The Team', content: ['Founders & expertise', 'Advisory board', 'Key hires', 'Company culture'], layout: 'content_slide' },
+      { title: 'Investment Ask', content: ['Funding needed', 'Use of funds', 'Milestones to achieve', 'Expected returns'], layout: 'section' }
+    ],
+    research: [
+      { title: 'Research Background', content: ['Context and motivation', 'Literature review', 'Research gap', 'Significance of study'], layout: 'content_slide' },
+      { title: 'Methodology', content: ['Research design', 'Data collection methods', 'Sample size and selection', 'Analysis approach'], layout: 'content_slide' },
+      { title: 'Key Findings', content: ['Finding 1', 'Finding 2', 'Finding 3', 'Statistical significance'], layout: 'big-number' },
+      { title: 'Data Analysis', content: ['Quantitative results', 'Qualitative insights', 'Pattern identification', 'Correlation findings'], layout: 'data_visualization' },
+      { title: 'Discussion', content: ['Interpretation of results', 'Comparison with prior work', 'Implications', 'Unexpected findings'], layout: 'content_slide' },
+      { title: 'Limitations', content: ['Scope limitations', 'Methodology constraints', 'Data limitations', 'Future considerations'], layout: 'content_slide' },
+      { title: 'Future Directions', content: ['Recommended next steps', 'Extended research areas', 'Policy implications', 'Practical applications'], layout: 'content_slide' },
+      { title: 'Conclusions', content: ['Key contribution 1', 'Key contribution 2', 'Impact statement', 'Final remarks'], layout: 'content_slide' }
+    ],
+    technical: [
+      { title: 'Technical Overview', content: ['System description', 'Core functionality', 'Key components', 'Architecture summary'], layout: 'content_slide' },
+      { title: 'Architecture', content: ['System layers', 'Component interactions', 'Data flow', 'Integration points'], layout: 'two-column' },
+      { title: 'Key Features', content: ['Feature 1: Capability', 'Feature 2: Performance', 'Feature 3: Scalability', 'Feature 4: Security'], layout: 'content_slide' },
+      { title: 'Implementation', content: ['Setup requirements', 'Configuration steps', 'Deployment process', 'Best practices'], layout: 'timeline_flow' },
+      { title: 'Performance Metrics', content: ['Benchmark 1', 'Benchmark 2', 'Comparison data', 'Optimization results'], layout: 'data_visualization' },
+      { title: 'Best Practices', content: ['Recommendation 1', 'Recommendation 2', 'Common pitfalls', 'Optimization tips'], layout: 'content_slide' },
+      { title: 'Troubleshooting', content: ['Common issue 1', 'Common issue 2', 'Debugging tips', 'Support resources'], layout: 'content_slide' },
+      { title: 'Roadmap', content: ['Planned feature 1', 'Planned feature 2', 'Timeline', 'Version updates'], layout: 'timeline_flow' }
+    ],
+    creative: [
+      { title: 'The Vision', content: ['Creative concept', 'Inspiration sources', 'Core message', 'Target audience'], layout: 'content_slide' },
+      { title: 'Key Ideas', content: ['Idea 1', 'Idea 2', 'Idea 3', 'Connection theme'], layout: 'content_slide' },
+      { title: 'Story', content: ['Beginning', 'Development', 'Climax', 'Resolution'], layout: 'timeline_flow' },
+      { title: 'Highlights', content: ['Key moment 1', 'Key moment 2', 'Memorable element', 'Impact point'], layout: 'big-number' },
+      { title: 'Details', content: ['Detail 1', 'Detail 2', 'Detail 3', 'Supporting elements'], layout: 'content_slide' },
+      { title: 'Impact', content: ['Emotional impact', 'Visual impact', 'Message impact', 'Lasting impression'], layout: 'content_slide' }
+    ]
+  };
+
+  const sections = sectionsByType[type] || sectionsByType.educational;
 
   // Add content slides
   for (let i = 0; i < contentSlidesNeeded; i++) {
-    const section = pitchSections[i % pitchSections.length];
+    const section = sections[i % sections.length];
     slides.push({
       title: section.title,
       content: section.content,
@@ -164,18 +378,26 @@ function createFallbackPPT(topic: string, slideCount: number): GeneratedPPT {
   }
 
   // Last slide: Conclusion
+  const conclusions: Record<string, string[]> = {
+    educational: ['Key Takeaways', `Remember: ${topic} matters`, 'Questions?', 'Thank you for learning!'],
+    business: ['Questions?', 'Contact us to learn more', 'Let\'s discuss next steps', 'Thank you!'],
+    research: ['Summary of Findings', 'Implications for the field', 'Questions & Discussion', 'Thank you!'],
+    technical: ['Summary', 'Resources & Documentation', 'Q&A', 'Thank you!'],
+    creative: ['The End', 'Thank you for your attention', 'Let\'s connect', 'Questions?']
+  };
+
   slides.push({
     title: 'Thank You',
-    content: ['Questions?', 'Contact: info@company.com', 'Let\'s discuss next steps'],
-    notes: 'Closing remarks and call to action',
+    content: conclusions[type] || conclusions.educational,
+    notes: 'Closing remarks',
     layout: 'conclusion'
   });
 
-  console.log(`✅ Generated ${slides.length} slides (requested: ${slideCount})`);
+  console.log(`✅ Generated ${slides.length} fallback slides (requested: ${slideCount}) - Type: ${type}`);
 
   return {
     title: topic,
-    subtitle: 'Investor Pitch Deck',
+    subtitle: subtitles[type] || 'Presentation',
     slides,
     theme: 'professional'
   };
@@ -192,46 +414,32 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
   pres.title = pptData.title;
   pres.layout = 'LAYOUT_WIDE';
 
-  const themeConfigs = {
-    professional: {
-      primary: '1E3A8A',
-      secondary: '3B82F6',
-      accent: '60A5FA',
-      text: '1F2937',
-      light: 'F0F9FF',
-      dark: '0F172A'
-    },
-    modern: {
-      primary: '6366F1',
-      secondary: '8B5CF6',
-      accent: 'A78BFA',
-      text: '1F2937',
-      light: 'F5F3FF',
-      dark: '1E1B4B'
-    },
-    creative: {
-      primary: 'DC2626',
-      secondary: 'F59E0B',
-      accent: 'FBBF24',
-      text: '1F2937',
-      light: 'FEF3C7',
-      dark: '7C2D12'
-    },
-    minimal: {
-      primary: '111827',
-      secondary: '374151',
-      accent: '6B7280',
-      text: '1F2937',
-      light: 'F9FAFB',
-      dark: '030712'
-    }
-  };
+  // Get theme colors from pptThemeIntelligence - supports all 35+ themes
+  const theme = getThemeColors(pptData.theme);
 
-  const theme = themeConfigs[pptData.theme as keyof typeof themeConfigs] || themeConfigs.professional;
+  // Auto-assign varied layouts if all slides have same layout
+  const layouts = pptData.slides.map(s => s.layout);
+  const uniqueLayouts = new Set(layouts);
 
   pptData.slides.forEach((slideData, index) => {
     const slide = pres.addSlide();
-    const layout = slideData.layout || 'content_slide';
+
+    // Auto-vary layouts if only 1-2 unique layouts exist
+    let layout = slideData.layout || 'content_slide';
+    if (uniqueLayouts.size <= 2 && index > 0 && index < pptData.slides.length - 1) {
+      // Cycle through different visual styles for middle slides
+      const styleIndex = index % 4;
+      if (styleIndex === 0) layout = 'big-number';
+      else if (styleIndex === 1) layout = 'two-column';
+      else if (styleIndex === 2) layout = 'data_visualization';
+      else layout = 'content_slide';
+    }
+
+    // First slide always title, last always conclusion
+    if (index === 0) layout = 'title_slide';
+    if (index === pptData.slides.length - 1) layout = 'conclusion';
+
+    // Use consistent theme colors across all slides (no alternating)
 
     if (layout === 'title' || layout === 'title_slide') {
       // PREMIUM TITLE SLIDE with stunning visuals
@@ -320,8 +528,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'section') {
-      // SECTION HEADER - Bold statement slide
-      slide.background = { color: theme.dark };
+      // SECTION HEADER - Bold statement slide with consistent theme
+      slide.background = { color: theme.primary };
 
       // Decorative element
       slide.addShape(pres.ShapeType.ellipse, {
@@ -358,8 +566,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       }
 
     } else if (layout === 'big-number') {
-      // BIG NUMBER/STAT SLIDE
-      slide.background = { color: theme.light };
+      // BIG NUMBER/STAT SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header bar
       slide.addShape(pres.ShapeType.rect, {
@@ -406,8 +614,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'two-column') {
-      // TWO COLUMN LAYOUT
-      slide.background = { color: 'FFFFFF' };
+      // TWO COLUMN LAYOUT with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header
       slide.addShape(pres.ShapeType.rect, {
@@ -474,8 +682,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'conclusion') {
-      // CONCLUSION SLIDE
-      slide.background = { color: theme.secondary };
+      // CONCLUSION SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Large circle decoration
       slide.addShape(pres.ShapeType.ellipse, {
@@ -512,10 +720,10 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'content' || layout === 'content_slide') {
-      // PREMIUM CONTENT SLIDE with sophisticated design
+      // PREMIUM CONTENT SLIDE with consistent design
       slide.background = { color: theme.primary };
 
-      // Full background with gradient
+      // Full background with color
       slide.addShape(pres.ShapeType.rect, {
         x: 0,
         y: 0,
@@ -602,8 +810,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'data_visualization') {
-      // DATA VISUALIZATION SLIDE - Charts and metrics
-      slide.background = { color: 'FFFFFF' };
+      // DATA VISUALIZATION SLIDE - Charts and metrics with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header with accent bar
       slide.addShape(pres.ShapeType.rect, {
@@ -649,8 +857,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'comparison_matrix') {
-      // COMPARISON MATRIX SLIDE
-      slide.background = { color: 'FFFFFF' };
+      // COMPARISON MATRIX SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header
       slide.addShape(pres.ShapeType.rect, {
@@ -695,8 +903,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'timeline_flow') {
-      // TIMELINE FLOW SLIDE
-      slide.background = { color: theme.light };
+      // TIMELINE FLOW SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header
       slide.addShape(pres.ShapeType.rect, {
@@ -796,8 +1004,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'market_analysis') {
-      // MARKET ANALYSIS SLIDE
-      slide.background = { color: 'FFFFFF' };
+      // MARKET ANALYSIS SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header with market focus
       slide.addShape(pres.ShapeType.rect, {
@@ -842,8 +1050,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'competitive_landscape') {
-      // COMPETITIVE LANDSCAPE SLIDE
-      slide.background = { color: 'FFFFFF' };
+      // COMPETITIVE LANDSCAPE SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header
       slide.addShape(pres.ShapeType.rect, {
@@ -892,8 +1100,8 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
       });
 
     } else if (layout === 'financial_projection') {
-      // FINANCIAL PROJECTION SLIDE
-      slide.background = { color: 'FFFFFF' };
+      // FINANCIAL PROJECTION SLIDE with consistent theme
+      slide.background = { color: theme.primary };
 
       // Header with financial theme
       slide.addShape(pres.ShapeType.rect, {
@@ -938,7 +1146,7 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
         });
       });
 
-    } else if (layout === 'conclusion_call_to_action' || layout === 'conclusion' || layout === 'quote') {
+    } else if (layout === 'conclusion_call_to_action' || layout === 'conclusion') {
       // CONCLUSION & CALL TO ACTION SLIDE
       slide.background = { color: theme.secondary };
 
@@ -988,14 +1196,40 @@ export async function generatePPTXFile(pptData: GeneratedPPT): Promise<Blob> {
 }
 
 export function downloadPPTX(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+  // Ensure proper MIME type for PPTX
+  const pptxBlob = new Blob([blob], {
+    type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  });
+
+  // Clean filename: remove special characters, ensure no double extensions
+  let cleanFilename = filename
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Remove special characters
+    .replace(/\s+/g, '_')              // Replace spaces with underscores
+    .replace(/_+/g, '_')               // Remove multiple underscores
+    .trim();
+
+  // Ensure filename is not empty
+  if (!cleanFilename) {
+    cleanFilename = 'presentation';
+  }
+
+  // Add timestamp to make filename unique
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const finalFilename = `${cleanFilename}_${timestamp}.pptx`;
+
+  const url = URL.createObjectURL(pptxBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${filename}.pptx`;
+  link.download = finalFilename;
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 
-  console.log('✅ Download triggered:', filename);
+  // Cleanup
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+
+  console.log('✅ Download triggered:', finalFilename);
 }

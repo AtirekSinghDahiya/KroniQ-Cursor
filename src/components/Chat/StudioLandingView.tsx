@@ -104,17 +104,17 @@ export const StudioLandingView: React.FC<StudioLandingViewProps> = ({ onSelectMo
         badge: 'Reasoning'
       },
       {
-        id: 'flux-pro',
-        name: 'Flux Pro',
-        description: 'High-quality image generation via Kie AI',
+        id: 'flux-kontext',
+        name: 'Flux Kontext Pro',
+        description: 'Balanced image generation',
         icon: Image,
         category: 'image',
         badge: 'Image'
       },
       {
-        id: 'flux-dev',
-        name: 'Flux Dev',
-        description: 'Fast image generation via Kie AI',
+        id: '4o-image',
+        name: 'GPT-4o Image',
+        description: 'OpenAI GPT-4o image generation',
         icon: Image,
         category: 'image',
         badge: 'Image'
@@ -128,9 +128,9 @@ export const StudioLandingView: React.FC<StudioLandingViewProps> = ({ onSelectMo
         badge: 'Video'
       },
       {
-        id: 'veo-3',
-        name: 'Veo 3',
-        description: 'Google fast video generation model',
+        id: 'sora-2-text-to-video',
+        name: 'Sora 2',
+        description: 'OpenAI Sora cinematic video',
         icon: Video,
         category: 'video',
         badge: 'Video'
@@ -163,35 +163,99 @@ export const StudioLandingView: React.FC<StudioLandingViewProps> = ({ onSelectMo
     chat: [],
     images: [
       {
-        id: 'flux-pro',
-        name: 'Flux Pro',
-        description: 'High-quality image generation via Kie AI',
+        id: 'flux-kontext',
+        name: 'Flux Kontext Pro',
+        description: 'Balanced image generation',
         icon: Image,
         category: 'image',
         badge: 'Premium'
       },
       {
-        id: 'flux-dev',
-        name: 'Flux Dev',
-        description: 'Fast image generation via Kie AI',
+        id: '4o-image',
+        name: 'GPT-4o Image',
+        description: 'OpenAI GPT-4o image generation',
+        icon: Image,
+        category: 'image',
+        badge: 'Premium'
+      },
+      {
+        id: 'google/nano-banana',
+        name: 'Nano Banana',
+        description: 'Google Gemini-powered generation',
         icon: Image,
         category: 'image',
         badge: 'Fast'
       },
       {
-        id: 'sdxl',
-        name: 'Stable Diffusion XL',
-        description: 'Open-source image generation via Kie AI',
+        id: 'google/imagen4-ultra',
+        name: 'Imagen 4 Ultra',
+        description: 'Ultra-realistic Google Imagen 4',
         icon: Image,
         category: 'image',
-        badge: 'Pro'
+        badge: 'Premium'
+      },
+      {
+        id: 'seedream/4.5-text-to-image',
+        name: 'Seedream 4.5',
+        description: 'Artistic and creative generation',
+        icon: Image,
+        category: 'image',
+        badge: 'Fast'
+      },
+      {
+        id: 'grok-imagine/text-to-image',
+        name: 'Grok Imagine',
+        description: 'Grok-powered image generation',
+        icon: Image,
+        category: 'image',
+        badge: 'Fast'
       },
     ],
     video: [
       {
         id: 'veo3_fast',
         name: 'Veo 3.1 Fast',
-        description: 'Google Veo 3.1 fast generation via Kie AI',
+        description: 'Google Veo 3.1 fast generation',
+        icon: Video,
+        category: 'video',
+        badge: 'Fast'
+      },
+      {
+        id: 'veo3',
+        name: 'Veo 3.1 Quality',
+        description: 'Highest quality Google Veo',
+        icon: Video,
+        category: 'video',
+        badge: 'Premium'
+      },
+      {
+        id: 'sora-2-text-to-video',
+        name: 'Sora 2',
+        description: 'OpenAI Sora cinematic video',
+        icon: Video,
+        category: 'video',
+        badge: 'Premium'
+      },
+      {
+        id: 'wan/2-5-text-to-video',
+        name: 'Wan 2.5',
+        description: 'Creative video generation',
+        icon: Video,
+        category: 'video',
+        badge: 'Fast'
+      },
+      {
+        id: 'kling-2.6/text-to-video',
+        name: 'Kling 2.6',
+        description: 'Realistic video with audio',
+        icon: Video,
+        category: 'video',
+        badge: 'Premium'
+      },
+      {
+        id: 'grok-imagine/text-to-video',
+        name: 'Grok Video',
+        description: 'Grok-powered video generation',
         icon: Video,
         category: 'video',
         badge: 'Fast'
@@ -199,7 +263,7 @@ export const StudioLandingView: React.FC<StudioLandingViewProps> = ({ onSelectMo
       {
         id: 'runway-gen3',
         name: 'Runway Gen-3',
-        description: 'Professional video generation via Kie AI',
+        description: 'Professional video generation',
         icon: Video,
         category: 'video',
         badge: 'Premium'
@@ -304,172 +368,171 @@ export const StudioLandingView: React.FC<StudioLandingViewProps> = ({ onSelectMo
 
         {/* Tabs */}
         <div className="flex items-center justify-center gap-1 px-4 pb-6 border-b border-white/10">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 ${
-                activeTab === tab.id
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 ${activeTab === tab.id
                   ? 'bg-white/10 text-white border border-white/20'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Show grouped models for Chat tab */}
-          {activeTab === 'chat' ? (
-            <div className="space-y-4">
-              {chatModelGroups.map((group) => (
-                <div key={group.provider} className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
-                  {/* Provider Header - Clickable */}
-                  <button
-                    onClick={() => toggleProvider(group.provider)}
-                    className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
-                  >
-                    <h3 className="text-base font-semibold text-white">
-                      {group.provider}
-                    </h3>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/50">{group.models.length} models</span>
-                      {expandedProviders.includes(group.provider) ? (
-                        <ChevronDown className="w-5 h-5 text-white/50" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-white/50" />
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Models Grid - Collapsible */}
-                  {expandedProviders.includes(group.provider) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border-t border-white/10">
-                      {group.models.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                          <button
-                            key={card.id}
-                            onClick={() => handleCardClick(card)}
-                            className="group relative flex items-start gap-3 p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 text-left"
-                          >
-                            {/* Icon */}
-                            <div className="flex-shrink-0 p-2 rounded-lg bg-white/10 group-hover:bg-white/15 transition-colors">
-                              <Icon className="w-5 h-5 text-white" />
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-base font-medium text-white group-hover:text-white transition-colors">
-                                  {card.name}
-                                </h3>
-                                {card.badge && (
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
-                                    {card.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                                {card.description}
-                              </p>
-                            </div>
-
-                            {/* Arrow */}
-                            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Regular grid for other tabs */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {modelCards[activeTab].map((card) => {
-                const Icon = card.icon;
-                return (
-                  <button
-                    key={card.id}
-                    onClick={() => handleCardClick(card)}
-                    className="group relative flex items-start gap-4 p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 text-left"
-                  >
-                    {/* Icon */}
-                    <div className="flex-shrink-0 p-3 rounded-lg bg-white/10 group-hover:bg-white/15 transition-colors">
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-medium text-white group-hover:text-white transition-colors">
-                          {card.name}
-                        </h3>
-                        {card.badge && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
-                            {card.badge}
-                          </span>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Show grouped models for Chat tab */}
+            {activeTab === 'chat' ? (
+              <div className="space-y-4">
+                {chatModelGroups.map((group) => (
+                  <div key={group.provider} className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+                    {/* Provider Header - Clickable */}
+                    <button
+                      onClick={() => toggleProvider(group.provider)}
+                      className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
+                    >
+                      <h3 className="text-base font-semibold text-white">
+                        {group.provider}
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-white/50">{group.models.length} models</span>
+                        {expandedProviders.includes(group.provider) ? (
+                          <ChevronDown className="w-5 h-5 text-white/50" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-white/50" />
                         )}
                       </div>
-                      <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
-                        {card.description}
-                      </p>
-                    </div>
+                    </button>
 
-                    {/* Arrow */}
-                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+                    {/* Models Grid - Collapsible */}
+                    {expandedProviders.includes(group.provider) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border-t border-white/10">
+                        {group.models.map((card) => {
+                          const Icon = card.icon;
+                          return (
+                            <button
+                              key={card.id}
+                              onClick={() => handleCardClick(card)}
+                              className="group relative flex items-start gap-3 p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 text-left"
+                            >
+                              {/* Icon */}
+                              <div className="flex-shrink-0 p-2 rounded-lg bg-white/10 group-hover:bg-white/15 transition-colors">
+                                <Icon className="w-5 h-5 text-white" />
+                              </div>
 
-      {/* Bottom Input */}
-      <div className="border-t border-white/10 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleInputSubmit();
-                }
-              }}
-              placeholder="Ask KroniQ anything..."
-              className="w-full px-6 py-4 pr-14 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-all"
-            />
-            <button
-              onClick={handleInputSubmit}
-              disabled={!inputValue.trim()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <Send className="w-5 h-5 text-white" />
-            </button>
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-base font-medium text-white group-hover:text-white transition-colors">
+                                    {card.name}
+                                  </h3>
+                                  {card.badge && (
+                                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
+                                      {card.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
+                                  {card.description}
+                                </p>
+                              </div>
+
+                              {/* Arrow */}
+                              <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Regular grid for other tabs */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {modelCards[activeTab].map((card) => {
+                  const Icon = card.icon;
+                  return (
+                    <button
+                      key={card.id}
+                      onClick={() => handleCardClick(card)}
+                      className="group relative flex items-start gap-4 p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 text-left"
+                    >
+                      {/* Icon */}
+                      <div className="flex-shrink-0 p-3 rounded-lg bg-white/10 group-hover:bg-white/15 transition-colors">
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-medium text-white group-hover:text-white transition-colors">
+                            {card.name}
+                          </h3>
+                          {card.badge && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
+                              {card.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors leading-relaxed">
+                          {card.description}
+                        </p>
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* Bottom Input */}
+        <div className="border-t border-white/10 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleInputSubmit();
+                  }
+                }}
+                placeholder="Ask KroniQ anything..."
+                className="w-full px-6 py-4 pr-14 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-all"
+              />
+              <button
+                onClick={handleInputSubmit}
+                disabled={!inputValue.trim()}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Send className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

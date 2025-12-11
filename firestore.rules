@@ -1,0 +1,70 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection - users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Projects subcollection
+      match /projects/{projectId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Generation counts - users can read/write their own counts
+    match /generationCounts/{countId} {
+      allow read, write: if isAuthenticated() && 
+        countId.split('_')[0] == request.auth.uid;
+    }
+
+    // Analytics collection - allow authenticated users to write
+    match /analytics/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // App stats - allow reading for landing page stats
+    match /appStats/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Token packs - read-only for all users
+    match /tokenPacks/{packId} {
+      allow read: if true;
+    }
+
+    // Bug reports - authenticated users can create
+    match /bugReports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Contact form submissions - anyone can create
+    match /contactSubmissions/{submissionId} {
+      allow create: if true;
+    }
+
+    // Waitlist entries - anyone can create
+    match /waitlist/{entryId} {
+      allow create: if true;
+      allow read: if isAuthenticated() && resource.data.email == request.auth.token.email;
+    }
+  }
+}

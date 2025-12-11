@@ -100,77 +100,70 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProject }) => 
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setNewProjectType('code')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'code'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'code'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Code className="w-5 h-5" />
                       <span className="font-medium">Code</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('design')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'design'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'design'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Palette className="w-5 h-5" />
                       <span className="font-medium">Design</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('image')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'image'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'image'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <ImageIcon className="w-5 h-5" />
                       <span className="font-medium">Image</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('video')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'video'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'video'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Video className="w-5 h-5" />
                       <span className="font-medium">Video</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('music')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'music'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'music'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Music className="w-5 h-5" />
                       <span className="font-medium">Music</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('voice')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'voice'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'voice'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Mic className="w-5 h-5" />
                       <span className="font-medium">Voice</span>
                     </button>
                     <button
                       onClick={() => setNewProjectType('ppt')}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${
-                        newProjectType === 'ppt'
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg transition-all ${newProjectType === 'ppt'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <Presentation className="w-5 h-5" />
                       <span className="font-medium">PPT</span>

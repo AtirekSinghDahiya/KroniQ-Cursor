@@ -8,4 +8,9 @@ export default defineConfig({
     exclude: ['lucide-react'],
     include: ['pptxgenjs']
   },
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
+  },
 });

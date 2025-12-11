@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react'
-import { User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+/**
+ * useAuth Hook
+ * Uses Firebase Auth instead of Supabase
+ * 
+ * Note: This is a compatibility hook. For most cases, use the AuthContext directly:
+ * import { useAuth } from '../contexts/AuthContext';
+ */
+
+import { useState, useEffect } from 'react';
+import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    // Listen for auth changes using Firebase
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+    await firebaseSignOut(auth);
+  };
 
   return {
     user,
     loading,
     signOut,
-  }
+  };
 }

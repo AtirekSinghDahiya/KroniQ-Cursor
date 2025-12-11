@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Sparkles, Zap, Crown, ArrowRight } from 'lucide-react';
 import { Floating3DCard, AnimatedGradientOrb } from './FloatingElements';
+import { MouseParticles } from './MouseParticles';
 import { getTokenPacks, getTotalTokens } from '../../lib/subscriptionManagementService';
 
 interface PricingPageProps {
@@ -130,13 +131,14 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
   if (loading) {
     return (
       <div className="relative w-full min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#00FFF0]"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#EC4899]"></div>
       </div>
     );
   }
 
   return (
     <div className="relative w-full pb-20">
+      <MouseParticles />
       <AnimatedGradientOrb className="top-40 left-10 w-96 h-96" />
       <AnimatedGradientOrb className="bottom-40 right-10 w-[500px] h-[500px]" />
 
@@ -144,12 +146,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
       <section className={`relative pt-40 pb-20 px-4 ${mounted ? 'animate-fade-in-up' : 'opacity-0'}`}>
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-block px-6 py-3 glass-panel rounded-full border border-white/20 mb-8">
-            <span className="text-[#00FFF0] text-sm font-bold tracking-wider">TOKEN-BASED PRICING</span>
+            <span className="text-[#EC4899] text-sm font-bold tracking-wider">TOKEN-BASED PRICING</span>
           </div>
 
           <h1 className="text-6xl md:text-7xl font-bold text-white mb-8 leading-tight">
             Pay Only For{' '}
-            <span className="bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] bg-clip-text text-transparent">
               What You Use
             </span>
           </h1>
@@ -174,15 +176,14 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
               return (
                 <Floating3DCard key={pack.id} delay={idx * 100}>
                   <div
-                    className={`relative glass-panel rounded-3xl p-8 border transition-all duration-500 h-full flex flex-col ${
-                      pack.popular
-                        ? 'border-[#00FFF0]/60 scale-105 shadow-2xl shadow-[#00FFF0]/20'
-                        : 'border-white/20 hover:border-white/40'
-                    }`}
+                    className={`relative glass-panel rounded-3xl p-8 border transition-all duration-500 h-full flex flex-col ${pack.popular
+                      ? 'border-[#EC4899]/60 scale-105 shadow-2xl shadow-[#EC4899]/20'
+                      : 'border-white/20 hover:border-white/40'
+                      }`}
                   >
                     {pack.popular && (
                       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <div className="bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white px-6 py-2 rounded-full text-sm font-bold">
+                        <div className="bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white px-6 py-2 rounded-full text-sm font-bold">
                           💎 MOST POPULAR
                         </div>
                       </div>
@@ -190,9 +191,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
 
                     <div className="flex-1">
                       {/* Icon */}
-                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
-                        pack.popular ? 'from-[#00FFF0] to-[#8A2BE2]' : 'from-white/10 to-white/5'
-                      } flex items-center justify-center mb-6`}>
+                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${pack.popular ? 'from-[#EC4899] to-[#8B5CF6]' : 'from-white/10 to-white/5'
+                        } flex items-center justify-center mb-6`}>
                         <Icon className="w-8 h-8 text-white" />
                       </div>
 
@@ -201,12 +201,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
 
                       {/* Tokens */}
                       <div className="mb-6">
-                        <div className="text-5xl font-bold bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] bg-clip-text text-transparent mb-2">
+                        <div className="text-5xl font-bold bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] bg-clip-text text-transparent mb-2">
                           {formatTokens(totalTokens)}
                         </div>
                         <div className="text-white/60">tokens</div>
                         {pack.bonusTokens > 0 && (
-                          <div className="mt-2 text-sm text-[#00FFF0]">
+                          <div className="mt-2 text-sm text-[#EC4899]">
                             + {formatTokens(pack.bonusTokens)} bonus!
                           </div>
                         )}
@@ -219,14 +219,14 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
                           <div className="text-3xl font-bold text-white">${pack.priceUsd}</div>
                           <div className="text-xs text-white/40 mt-1">Tokens never expire</div>
                         </div>
-                        <div className="glass-panel rounded-xl p-4 border border-[#00FFF0]/30 relative overflow-hidden">
+                        <div className="glass-panel rounded-xl p-4 border border-[#EC4899]/30 relative overflow-hidden">
                           <div className="absolute top-2 right-2">
                             <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">
                               SAVE ${savings}
                             </span>
                           </div>
                           <div className="text-white/60 text-sm mb-1">Monthly Subscription</div>
-                          <div className="text-3xl font-bold bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] bg-clip-text text-transparent">
+                          <div className="text-3xl font-bold bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] bg-clip-text text-transparent">
                             ${monthlyPrice}
                           </div>
                           <div className="text-xs text-white/40 mt-1">Refills every month • Cancel anytime</div>
@@ -236,19 +236,19 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
                       {/* Features */}
                       <div className="space-y-3 mb-8">
                         <div className="flex items-center gap-2 text-white/70">
-                          <Check className="w-5 h-5 text-[#00FFF0]" />
+                          <Check className="w-5 h-5 text-[#EC4899]" />
                           <span>All 27 AI models</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/70">
-                          <Check className="w-5 h-5 text-[#00FFF0]" />
+                          <Check className="w-5 h-5 text-[#EC4899]" />
                           <span>Never expires</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/70">
-                          <Check className="w-5 h-5 text-[#00FFF0]" />
+                          <Check className="w-5 h-5 text-[#EC4899]" />
                           <span>Rollover unused tokens</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/70">
-                          <Check className="w-5 h-5 text-[#00FFF0]" />
+                          <Check className="w-5 h-5 text-[#EC4899]" />
                           <span>Priority support</span>
                         </div>
                       </div>
@@ -257,11 +257,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
                     {/* CTA Button */}
                     <button
                       onClick={onGetStarted}
-                      className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 ${
-                        pack.popular
-                          ? 'bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white hover:shadow-lg hover:shadow-[#00FFF0]/30'
-                          : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
-                      }`}
+                      className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 ${pack.popular
+                        ? 'bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white hover:shadow-lg hover:shadow-[#EC4899]/30'
+                        : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
+                        }`}
                     >
                       Get Started
                       <ArrowRight className="w-5 h-5" />
@@ -283,29 +282,29 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>10,000 daily tokens (refreshes)</span>
                     </div>
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>Access to 14 free AI models</span>
                     </div>
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>All basic features included</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>Perfect for trying KroniQ</span>
                     </div>
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>No subscription required</span>
                     </div>
                     <div className="flex items-center gap-2 text-white/70">
-                      <Check className="w-5 h-5 text-[#00FFF0]" />
+                      <Check className="w-5 h-5 text-[#EC4899]" />
                       <span>Upgrade anytime</span>
                     </div>
                   </div>
@@ -356,7 +355,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onGetStarted }) => {
               </p>
               <button
                 onClick={onGetStarted}
-                className="bg-gradient-to-r from-[#00FFF0] to-[#8A2BE2] text-white px-10 py-4 rounded-2xl font-bold text-lg hover:shadow-lg hover:shadow-[#00FFF0]/30 transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+                className="bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white px-10 py-4 rounded-2xl font-bold text-lg hover:shadow-lg hover:shadow-[#EC4899]/30 transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
               >
                 Get Started Now
                 <ArrowRight className="w-5 h-5" />

@@ -33,8 +33,6 @@ export async function getUserTokenBalance(userId: string): Promise<number> {
     if (error) throw error;
 
     const balance = data?.tokens_balance || 0;
-    console.log(`💰 Token balance for user ${userId}:`, balance);
-
     return balance;
   } catch (error) {
     console.error('Error fetching token balance:', error);
@@ -70,14 +68,12 @@ export async function checkAndRefreshDailyTokens(userId: string): Promise<void> 
 
 export function estimateTokenCost(
   modelId: string,
-  inputText: string,
-  estimatedOutputTokens: number = 500
+  inputText: string
 ): { providerCostUSD: number; tokens: number } {
   const modelCost = getModelCost(modelId);
-  const tokens = calculateTokensForMessage(modelId, inputText.length);
+  const tokens = calculateTokensForMessage(inputText, modelId);
 
   const providerCostUSD = modelCost.costPerMessage;
-  const totalCostUSD = providerCostUSD * (1 + PROFIT_MARGIN_PERCENTAGE);
 
   return { providerCostUSD, tokens };
 }
@@ -85,10 +81,9 @@ export function estimateTokenCost(
 export async function estimateRequestCost(
   userId: string,
   modelId: string,
-  inputText: string,
-  estimatedOutputTokens: number = 500
+  inputText: string
 ): Promise<TokenCostEstimate> {
-  const { providerCostUSD, tokens } = estimateTokenCost(modelId, inputText, estimatedOutputTokens);
+  const { providerCostUSD, tokens } = estimateTokenCost(modelId, inputText);
   const currentBalance = await getUserTokenBalance(userId);
   const profitMarginUSD = providerCostUSD * PROFIT_MARGIN_PERCENTAGE;
 
@@ -106,25 +101,77 @@ export async function deductTokensForRequest(
   userId: string,
   modelId: string,
   provider: string,
-  providerCostUSD: number,
+  customTokensToDeduct: number, // This is actually tokens to deduct, not USD
   requestType: string = 'chat'
 ): Promise<TokenDeductionResult> {
   try {
     const modelCost = getModelCost(modelId);
-    const baseTokens = modelCost.tokensPerMessage;
 
-    const tokensToDeduct = baseTokens;
+    // Use customTokensToDeduct if provided and valid, otherwise fallback to model base
+    // The parameter was named providerCostUSD but is actually used as token count
+    const tokensToDeduct = customTokensToDeduct > 0
+      ? Math.ceil(customTokensToDeduct)
+      : modelCost.tokensPerMessage;
 
     const { data, error } = await supabase.rpc('deduct_tokens_v2', {
       p_user_id: userId,
       p_tokens: tokensToDeduct,
       p_model: modelId,
       p_provider: provider,
-      p_cost_usd: providerCostUSD,
+      p_cost_usd: modelCost.costPerMessage, // This is actual USD cost for records
       p_request_type: requestType,
     });
 
-    if (error) throw error;
+    if (error) {
+      // RPC failed, attempting fallback
+
+      // Fallback: Directly update the profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('tokens_balance')
+        .eq('id', userId)
+        .single();
+
+      if (profileError || !profileData) {
+        console.error('❌ Fallback failed - could not fetch profile:', profileError);
+        return {
+          success: false,
+          balance: 0,
+          error: 'Failed to deduct tokens - profile not found',
+        };
+      }
+
+      const currentBalance = profileData.tokens_balance || 0;
+      const newBalance = Math.max(0, currentBalance - tokensToDeduct);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ tokens_balance: newBalance })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('❌ Fallback update failed:', updateError);
+        return {
+          success: false,
+          balance: currentBalance,
+          error: 'Failed to update token balance',
+        };
+      }
+
+      // Fallback deduction successful
+
+      // Dispatch event to update UI
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tokenBalanceUpdated', {
+          detail: { balance: newBalance }
+        }));
+      }
+
+      return {
+        success: true,
+        balance: newBalance,
+      };
+    }
 
     const result = data as { success: boolean; balance?: number; transaction_id?: string; error?: string; user_type?: string };
 
@@ -136,7 +183,14 @@ export async function deductTokensForRequest(
       };
     }
 
-    console.log(`✅ Token deduction successful - User: ${result.user_type}, Balance: ${result.balance}`);
+    // Token deduction successful
+
+    // Dispatch event to update UI
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tokenBalanceUpdated', {
+        detail: { balance: result.balance }
+      }));
+    }
 
     return {
       success: true,
@@ -145,6 +199,40 @@ export async function deductTokensForRequest(
     };
   } catch (error: any) {
     console.error('Error deducting tokens:', error);
+
+    // Try fallback on exception
+    try {
+      // Attempting fallback after exception
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('tokens_balance')
+        .eq('id', userId)
+        .single();
+
+      if (profileData) {
+        const currentBalance = profileData.tokens_balance || 0;
+        const tokensToDeduct = customTokensToDeduct > 0 ? Math.ceil(customTokensToDeduct) : 1000;
+        const newBalance = Math.max(0, currentBalance - tokensToDeduct);
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ tokens_balance: newBalance })
+          .eq('id', userId);
+
+        if (!updateError) {
+          // Fallback deduction successful
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tokenBalanceUpdated', {
+              detail: { balance: newBalance }
+            }));
+          }
+          return { success: true, balance: newBalance };
+        }
+      }
+    } catch (fallbackErr) {
+      console.error('❌ Fallback also failed:', fallbackErr);
+    }
+
     return {
       success: false,
       balance: 0,

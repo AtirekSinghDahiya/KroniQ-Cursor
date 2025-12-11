@@ -26,13 +26,16 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
   const [aspectRatio, setAspectRatio] = useState<'square' | 'landscape' | 'portrait' | '4:3' | '3:4'>('square');
   const [numImages, setNumImages] = useState(1);
   const [outputFormat, setOutputFormat] = useState<'JPEG' | 'PNG' | 'WebP'>('JPEG');
-  const [selectedModel, setSelectedModel] = useState('flux-pro');
+  const [selectedModel, setSelectedModel] = useState('flux-kontext-pro');
   const [showControls, setShowControls] = useState(true);
 
   const models = [
-    { id: 'flux-pro', name: 'Flux Pro', description: 'High-quality image generation', speed: 'Fast', provider: 'kie-ai' },
-    { id: 'flux-dev', name: 'Flux Dev', description: 'Fast image generation', speed: 'Fast', provider: 'kie-ai' },
-    { id: 'sdxl', name: 'Stable Diffusion XL', description: 'Open-source image model', speed: 'Medium', provider: 'kie-ai' },
+    { id: 'flux-kontext-pro', name: 'Flux Kontext Pro', description: 'Balanced image generation', speed: 'Premium', provider: 'kie-ai' },
+    { id: '4o-image', name: 'GPT-4o Image', description: 'OpenAI GPT-4o image generation', speed: 'Premium', provider: 'kie-ai' },
+    { id: 'google/nano-banana', name: 'Nano Banana', description: 'Google Gemini-powered generation', speed: 'Fast', provider: 'kie-ai' },
+    { id: 'google/imagen4-ultra', name: 'Imagen 4 Ultra', description: 'Ultra-realistic Google Imagen 4', speed: 'Premium', provider: 'kie-ai' },
+    { id: 'seedream/4.5', name: 'Seedream 4.5', description: 'Artistic and creative generation', speed: 'Fast', provider: 'kie-ai' },
+    { id: 'grok-imagine/text-to-image', name: 'Grok Imagine', description: 'Grok-powered image generation', speed: 'Fast', provider: 'kie-ai' },
   ];
 
   const handleGenerate = async () => {
@@ -58,7 +61,7 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
     setProgress('Starting...');
 
     try {
-      setProgress('Generating image with Kie AI...');
+      setProgress('Generating image with KroniQ AI...');
 
       const result = await generateImage({
         prompt,
@@ -78,7 +81,7 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
       console.log('✅ Image generation count incremented');
 
       // Save to project
-      await saveImageToProject(user.uid, prompt, imageUrl, {
+      await saveImageToProject(user.uid, prompt, result.url, {
         model: selectedModel,
         dimensions: aspectRatio,
         provider
@@ -178,11 +181,10 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
                   <button
                     key={model.id}
                     onClick={() => setSelectedModel(model.id)}
-                    className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border transition-all touch-manipulation ${
-                      selectedModel === model.id
-                        ? 'border-teal-500/40 bg-teal-500/10'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10 active:bg-white/15'
-                    }`}
+                    className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border transition-all touch-manipulation ${selectedModel === model.id
+                      ? 'border-teal-500/40 bg-teal-500/10'
+                      : 'border-white/10 bg-white/5 hover:bg-white/10 active:bg-white/15'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-white">{model.name}</span>
@@ -203,11 +205,10 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
                     key={ar.id}
                     onClick={() => setAspectRatio(ar.id)}
                     disabled={isGenerating}
-                    className={`flex flex-col items-center gap-1 sm:gap-1.5 p-2 sm:p-3 rounded-lg border transition-all touch-manipulation min-h-[60px] sm:min-h-[70px] ${
-                      aspectRatio === ar.id
-                        ? 'bg-teal-500/20 border-teal-500/50 text-white'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
-                    }`}
+                    className={`flex flex-col items-center gap-1 sm:gap-1.5 p-2 sm:p-3 rounded-lg border transition-all touch-manipulation min-h-[60px] sm:min-h-[70px] ${aspectRatio === ar.id
+                      ? 'bg-teal-500/20 border-teal-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
+                      }`}
                   >
                     <span className="text-xl sm:text-2xl">{ar.icon}</span>
                     <span className="text-[9px] sm:text-[10px] font-medium">{ar.ratio}</span>
@@ -225,11 +226,10 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
                     key={num}
                     onClick={() => setNumImages(num)}
                     disabled={isGenerating}
-                    className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
-                      numImages === num
-                        ? 'bg-teal-500/20 border-teal-500/50 text-white'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
-                    }`}
+                    className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border text-sm font-medium transition-all touch-manipulation min-h-[44px] ${numImages === num
+                      ? 'bg-teal-500/20 border-teal-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
+                      }`}
                   >
                     {num}
                   </button>
@@ -246,11 +246,10 @@ export const SimpleImageGenerator: React.FC<SimpleImageGeneratorProps> = ({
                     key={format}
                     onClick={() => setOutputFormat(format)}
                     disabled={isGenerating}
-                    className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border text-sm font-medium transition-all touch-manipulation min-h-[44px] ${
-                      outputFormat === format
-                        ? 'bg-teal-500/20 border-teal-500/50 text-white'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
-                    }`}
+                    className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border text-sm font-medium transition-all touch-manipulation min-h-[44px] ${outputFormat === format
+                      ? 'bg-teal-500/20 border-teal-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 active:bg-white/15'
+                      }`}
                   >
                     {format}
                   </button>

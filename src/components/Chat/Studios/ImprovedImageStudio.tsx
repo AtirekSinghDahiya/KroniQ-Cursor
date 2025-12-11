@@ -129,7 +129,7 @@ export const ImprovedImageStudio: React.FC<ImageStudioProps> = ({
       provider: 'kie-ai',
       onProgress: setProgress
     }, async () => {
-      setProgress('Generating image with Kie AI...');
+      setProgress('Generating image with KroniQ AI...');
 
       const imageResult = await Promise.race([
         generateImage({
@@ -185,7 +185,7 @@ export const ImprovedImageStudio: React.FC<ImageStudioProps> = ({
     {
       id: 'flux-kontext',
       name: 'Flux Kontext',
-      description: 'In-context editing via Kie AI',
+      description: 'In-context editing',
       speed: 'Fast',
       quality: 'Premium'
     },
@@ -449,11 +449,10 @@ export const ImprovedImageStudio: React.FC<ImageStudioProps> = ({
                     key={model.id}
                     onClick={() => setSelectedModel(model.id)}
                     disabled={isGenerating}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
-                      selectedModel === model.id
-                        ? 'border-[#00FFF0]/40 bg-[#00FFF0]/10'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    }`}
+                    className={`w-full text-left p-4 rounded-lg border transition-all ${selectedModel === model.id
+                      ? 'border-[#00FFF0]/40 bg-[#00FFF0]/10'
+                      : 'border-white/10 bg-white/5 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="font-medium">{model.name}</span>
@@ -481,16 +480,14 @@ export const ImprovedImageStudio: React.FC<ImageStudioProps> = ({
                     key={ar.id}
                     onClick={() => setAspectRatio(ar.id)}
                     disabled={isGenerating}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      aspectRatio === ar.id
-                        ? 'bg-[#00FFF0]/20 border-[#00FFF0]/50 text-white'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${aspectRatio === ar.id
+                      ? 'bg-[#00FFF0]/20 border-[#00FFF0]/50 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded border-2 flex items-center justify-center ${
-                        aspectRatio === ar.id ? 'border-[#00FFF0]' : 'border-white/20'
-                      }`}>
+                      <div className={`w-8 h-8 rounded border-2 flex items-center justify-center ${aspectRatio === ar.id ? 'border-[#00FFF0]' : 'border-white/20'
+                        }`}>
                         <div
                           className="bg-white/40 rounded-sm"
                           style={{

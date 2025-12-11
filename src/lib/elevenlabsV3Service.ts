@@ -283,12 +283,10 @@ export function estimateAudioDuration(text: string): number {
  * Calculate token cost based on character count
  */
 export function calculateTTSTokenCost(text: string, modelId: string): number {
-  const charCount = text.length;
-  const baseModel = Object.values(ELEVENLABS_V3_MODELS).find(m => m.id === modelId);
-  const baseCost = baseModel?.tokenCost || 500;
-
-  // Cost scales with character count (1 token per character as baseline)
-  return Math.ceil(charCount * (baseCost / 1000));
+  // Base: 500 tokens + 10 tokens per character
+  const baseCost = 500;
+  const perCharCost = 10;
+  return baseCost + (text.length * perCharCost);
 }
 
 /**

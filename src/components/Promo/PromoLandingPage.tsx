@@ -37,7 +37,7 @@ export default function PromoLandingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading offer details...</p>
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function PromoLandingPage() {
   }
 
   const remainingSlots = campaignStatus?.remainingSlots || 0;
-  const tokenAmount = campaignStatus?.tokenAmount || 5000000;
+  const tokenAmount = campaignStatus?.tokenAmount || 500000;
   const claimedSlots = 100 - remainingSlots;
   const progressPercentage = (claimedSlots / 100) * 100;
 
@@ -53,13 +53,13 @@ export default function PromoLandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
 
-      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
 
       <div className="relative z-10 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-purple-600/20 border border-pink-500/30 rounded-full mb-6">
               <Sparkles className="w-4 h-4 text-yellow-400" />
               <span className="text-sm font-semibold text-blue-300 uppercase tracking-wide">
                 Limited Time Offer
@@ -68,7 +68,7 @@ export default function PromoLandingPage() {
 
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
               Be One of the{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-violet-500">
                 First 100 Users
               </span>
             </h1>
@@ -91,7 +91,7 @@ export default function PromoLandingPage() {
               </div>
               <div className="w-full bg-slate-800 rounded-full h-4 overflow-hidden border border-slate-700">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out relative overflow-hidden"
+                  className="h-full bg-gradient-to-r from-pink-500 to-violet-500 transition-all duration-500 ease-out relative overflow-hidden"
                   style={{ width: `${progressPercentage}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
@@ -102,11 +102,10 @@ export default function PromoLandingPage() {
             <button
               onClick={handleClaimOffer}
               disabled={!campaignStatus?.isValid}
-              className={`group px-8 py-4 text-lg font-bold rounded-xl transition-all transform hover:scale-105 shadow-2xl flex items-center gap-3 mx-auto ${
-                campaignStatus?.isValid
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+              className={`group px-8 py-4 text-lg font-bold rounded-xl transition-all transform hover:scale-105 shadow-2xl flex items-center gap-3 mx-auto ${campaignStatus?.isValid
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              }`}
+                }`}
             >
               {campaignStatus?.isValid ? (
                 <>
@@ -125,7 +124,7 @@ export default function PromoLandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 backdrop-blur-sm">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
@@ -137,7 +136,7 @@ export default function PromoLandingPage() {
             </div>
 
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 backdrop-blur-sm">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
                 <Rocket className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
@@ -169,7 +168,7 @@ export default function PromoLandingPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
                   1
                 </div>
                 <div>
@@ -209,7 +208,7 @@ export default function PromoLandingPage() {
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-blue-600/10 border border-blue-500/30 rounded-lg">
+            <div className="mt-6 p-4 bg-purple-600/10 border border-pink-500/30 rounded-lg">
               <p className="text-blue-300 font-medium text-center">
                 💰 That's worth <span className="text-white font-bold">${(tokenAmount / 1000000).toFixed(2)}</span> in AI credits, completely free!
               </p>
@@ -267,11 +266,10 @@ export default function PromoLandingPage() {
             <button
               onClick={handleClaimOffer}
               disabled={!campaignStatus?.isValid}
-              className={`group px-8 py-4 text-lg font-bold rounded-xl transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3 ${
-                campaignStatus?.isValid
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+              className={`group px-8 py-4 text-lg font-bold rounded-xl transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3 ${campaignStatus?.isValid
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              }`}
+                }`}
             >
               {campaignStatus?.isValid ? (
                 <>

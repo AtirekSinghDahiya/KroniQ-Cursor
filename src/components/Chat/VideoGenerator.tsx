@@ -172,8 +172,8 @@ export const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onClose, initial
   };
 
   const getProviderDescription = () => {
-    if (provider === 'sora-2') return 'Powered by OpenAI Sora 2 via Kie AI';
-    return 'Powered by Google Veo 3 via Kie AI';
+    if (provider === 'sora-2') return 'Powered by OpenAI Sora 2';
+    return 'Powered by Google Veo 3';
   };
 
   return (
@@ -212,11 +212,10 @@ export const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onClose, initial
                   <button
                     onClick={() => setProvider('veo-3')}
                     disabled={isGenerating || !veo3Available}
-                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
-                      provider === 'veo-3'
+                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${provider === 'veo-3'
                         ? 'bg-white/10 border border-white/20 text-white'
                         : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="font-semibold">Veo 3</div>
                     <div className="text-xs opacity-60">Google</div>
@@ -224,11 +223,10 @@ export const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onClose, initial
                   <button
                     onClick={() => setProvider('sora-2')}
                     disabled={isGenerating || !sora2Available}
-                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
-                      provider === 'sora-2'
+                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${provider === 'sora-2'
                         ? 'bg-white/10 border border-white/20 text-white'
                         : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="font-semibold">Sora 2</div>
                     <div className="text-xs opacity-60">OpenAI</div>

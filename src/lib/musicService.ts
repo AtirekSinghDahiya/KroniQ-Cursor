@@ -3,12 +3,15 @@
  * Uses Kie AI (Suno) for high-quality music generation
  */
 
-import { generateSunoMusic } from './sunoService';
+import { generateKieMusic, KIE_MODELS } from './kieAIService';
 
 export interface MusicGenerationOptions {
   prompt: string;
   duration?: number;
   model?: string;
+  style?: string;
+  title?: string;
+  instrumental?: boolean;
 }
 
 export interface GeneratedMusic {
@@ -17,43 +20,34 @@ export interface GeneratedMusic {
   timestamp: Date;
   model: string;
   duration: number;
+  title: string;
+  style: string;
 }
 
 /**
- * Generate music using Suno API
+ * Generate music using Kie AI
  */
 export async function generateMusic(options: MusicGenerationOptions): Promise<GeneratedMusic> {
   const {
     prompt,
     duration = 30,
-    model = 'V3_5'
+    model = 'V3_5',
+    style = 'Pop',
+    title = 'Generated Song',
+    instrumental = false
   } = options;
 
-  console.log('🎵 Generating music with Suno API:', { prompt, duration });
+  console.log('🎵 Generating music with Kie AI:', { prompt, duration, model });
 
   try {
-    // Get Suno API key from environment
-    const sunoApiKey = import.meta.env.VITE_SUNO_API_KEY;
-    if (!sunoApiKey) {
-      console.warn('⚠️ Suno API key not configured, returning placeholder');
-      // Return a placeholder response
-      return {
-        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
-        prompt: prompt,
-        timestamp: new Date(),
-        model: 'placeholder',
-        duration: duration
-      };
-    }
-
-    const musicUrl = await generateSunoMusic({
-      prompt: prompt,
-      style: 'pop', // Default style
-      title: `AI Generated Music - ${new Date().toLocaleDateString()}`,
-      customMode: true,
-      instrumental: false,
-      model: model,
-    }, sunoApiKey);
+    // Generate music using Kie AI (wraps Suno)
+    const musicUrl = await generateKieMusic(
+      prompt,
+      true, // custom mode for better control
+      style,
+      title,
+      instrumental
+    );
 
     console.log('✅ Music generated successfully');
 
@@ -62,7 +56,9 @@ export async function generateMusic(options: MusicGenerationOptions): Promise<Ge
       prompt: prompt,
       timestamp: new Date(),
       model: model,
-      duration: duration
+      duration: duration,
+      title: title,
+      style: style
     };
 
   } catch (error: any) {
@@ -86,14 +82,4 @@ export function getAvailableMusicModels() {
     { id: 'V3_5', name: 'Suno V3.5', description: 'Latest Suno music model' },
     { id: 'V4', name: 'Suno V4', description: 'Advanced Suno music generation' }
   ];
-}
-
-/**
- * Generate music with Suno
- */
-export async function generateSunoMusic(
-  prompt: string,
-  duration: number = 30
-): Promise<GeneratedMusic> {
-  return generateMusic({ prompt, duration, model: 'suno-v3.5' });
 }

@@ -86,7 +86,7 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
 
     fetchTokenBalance();
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates from Supabase
     const channel = supabase
       .channel(`token-balance-${currentUser.uid}`)
       .on(
@@ -105,8 +105,19 @@ export const ProfileButton: React.FC<ProfileButtonProps> = ({ tokenBalance: prop
       )
       .subscribe();
 
+    // Listen for custom token balance updates from MainChat
+    const handleTokenUpdate = (event: CustomEvent<{ balance: number }>) => {
+      if (event.detail && typeof event.detail.balance === 'number') {
+        console.log('🔄 Token balance updated via event:', event.detail.balance);
+        setTokenBalance(event.detail.balance);
+      }
+    };
+
+    window.addEventListener('tokenBalanceUpdated', handleTokenUpdate as EventListener);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('tokenBalanceUpdated', handleTokenUpdate as EventListener);
     };
   }, [currentUser?.uid]);
 

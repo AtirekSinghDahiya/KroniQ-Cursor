@@ -1,70 +1,82 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/kroniq-icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0a0e27" />
 
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="KroniQ - AI Development Studio. Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
-    <meta name="keywords" content="AI, artificial intelligence, AI studio, chat AI, image generation, video generation, AI tools" />
-    <meta name="author" content="KroniQ AI" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0e27" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://kroniqai.com/" />
-    <meta property="og:title" content="KroniQ - AI Development Studio" />
-    <meta property="og:description" content="Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
-    <meta property="og:image" content="/kroniq-icon.svg" />
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="KroniQ - AI Development Studio. Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
+  <meta name="keywords"
+    content="AI, artificial intelligence, AI studio, chat AI, image generation, video generation, AI tools" />
+  <meta name="author" content="KroniQ AI" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://kroniqai.com/" />
-    <meta property="twitter:title" content="KroniQ - AI Development Studio" />
-    <meta property="twitter:description" content="Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
-    <meta property="twitter:image" content="/kroniq-icon.svg" />
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://kroniqai.com/" />
+  <meta property="og:title" content="KroniQ - AI Development Studio" />
+  <meta property="og:description"
+    content="Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
+  <meta property="og:image" content="/favicon.svg" />
 
-    <!-- Favicon -->
-    <link rel="apple-touch-icon" href="/kroniq-icon.svg" />
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://kroniqai.com/" />
+  <meta property="twitter:title" content="KroniQ - AI Development Studio" />
+  <meta property="twitter:description"
+    content="Harness the power of multiple AI models in one unified platform. Create, code, design, and deploy with unprecedented speed." />
+  <meta property="twitter:image" content="/favicon.svg" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>KroniQ - AI Development Studio</title>
-    <style>
-      /* Prevent white flash on load */
-      html, body {
-        background: #0a0e27;
-        margin: 0;
-        padding: 0;
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon-logo.png" />
+  <link rel="apple-touch-icon" href="/favicon-logo.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <title>KroniQ - AI Development Studio</title>
+  <style>
+    /* Prevent white flash on load */
+    html,
+    body {
+      background: #0a0e27;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Loading spinner */
+    #root:empty::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      margin: -25px 0 0 -25px;
+      border: 3px solid rgba(0, 255, 240, 0.2);
+      border-top-color: #00FFF0;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
+    }
+  </style>
+</head>
 
-      /* Loading spinner */
-      #root:empty::before {
-        content: '';
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 50px;
-        height: 50px;
-        margin: -25px 0 0 -25px;
-        border: 3px solid rgba(0, 255, 240, 0.2);
-        border-top-color: #00FFF0;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
 
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
 </html>

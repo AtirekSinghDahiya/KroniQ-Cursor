@@ -31,19 +31,19 @@ export const IntentDialog: React.FC<IntentDialogProps> = ({ intent, onConfirm, o
   const getGradient = () => {
     switch (intent.intent) {
       case 'code':
-        return 'from-cyan-500/20 to-blue-500/20';
+        return 'from-purple-500/20 to-pink-500/20';
       case 'design':
         return 'from-pink-500/20 to-purple-500/20';
       case 'video':
         return 'from-purple-500/20 to-indigo-500/20';
       case 'voice':
-        return 'from-teal-500/20 to-cyan-500/20';
+        return 'from-teal-500/20 to-purple-500/20';
       case 'music':
         return 'from-violet-500/20 to-purple-500/20';
       case 'image':
         return 'from-rose-500/20 to-pink-500/20';
       default:
-        return 'from-blue-500/20 to-cyan-500/20';
+        return 'from-pink-500/20 to-purple-500/20';
     }
   };
 
@@ -76,7 +76,7 @@ export const IntentDialog: React.FC<IntentDialogProps> = ({ intent, onConfirm, o
 
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
             <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
               style={{ width: `${confidencePercentage}%` }}
             />
           </div>
@@ -90,7 +90,7 @@ export const IntentDialog: React.FC<IntentDialogProps> = ({ intent, onConfirm, o
           <div className="flex gap-3">
             <button
               onClick={onConfirm}
-              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:shadow-lg hover:shadow-cyan-500/20 transition-all button-press flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all button-press flex items-center justify-center gap-2"
             >
               Switch to {intent.suggestedStudio.split(' ')[0]}
               <ArrowRight className="w-4 h-4" />

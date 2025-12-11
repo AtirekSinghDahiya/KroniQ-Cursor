@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Coins, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { db } from '../../lib/firebase';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 interface TokenBalanceDisplayProps {
   isExpanded?: boolean;
@@ -22,7 +23,7 @@ export const TokenBalanceDisplay: React.FC<TokenBalanceDisplayProps> = ({ isExpa
   const [balance, setBalance] = useState<TokenBalance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch token balance directly from profiles
+  // Fetch token balance directly from Firebase
   const fetchBalance = async () => {
     if (!user) {
       setIsLoading(false);
@@ -30,44 +31,24 @@ export const TokenBalanceDisplay: React.FC<TokenBalanceDisplayProps> = ({ isExpa
     }
 
     try {
-      console.log('💰 Fetching token balance for user:', user.uid);
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
 
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('user_type, paid_tokens_balance, free_tokens_balance, daily_free_tokens_remaining, tokens_balance, is_paid, is_premium')
-        .eq('id', user.uid)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching token balance:', error);
-        setBalance(null);
-      } else if (profile) {
-        const userType = profile.user_type || (profile.paid_tokens_balance > 0 ? 'paid' : 'free');
-        const paidTokens = profile.paid_tokens_balance || 0;
-        const freeTokens = profile.free_tokens_balance || 0;
-        const dailyTokens = profile.daily_free_tokens_remaining || 0;
-
-        // Use tokens_balance as primary source (most reliable)
-        const totalTokens = profile.tokens_balance || (userType === 'paid' ? paidTokens : freeTokens);
-
-        console.log('📊 Token calculation:', {
-          tokens_balance: profile.tokens_balance,
-          free_tokens_balance: freeTokens,
-          paid_tokens_balance: paidTokens,
-          calculated_total: totalTokens,
-          user_type: userType
-        });
+      if (userDoc.exists()) {
+        const profile = userDoc.data();
+        const tokensLimit = profile.tokensLimit || 0;
+        const tokensUsed = profile.tokensUsed || 0;
+        const totalTokens = tokensLimit - tokensUsed;
+        const plan = profile.plan || 'free';
+        const isPremium = plan === 'premium' || plan === 'paid';
 
         setBalance({
-          tier: userType === 'paid' || paidTokens > 0 || profile.is_paid ? 'premium' : 'free',
-          dailyTokens,
-          paidTokens,
+          tier: isPremium ? 'premium' : 'free',
+          dailyTokens: 0,
+          paidTokens: isPremium ? totalTokens : 0,
           totalTokens,
-          canUsePaidModels: userType === 'paid' || paidTokens > 0 || profile.is_paid || profile.is_premium
+          canUsePaidModels: isPremium || totalTokens > 500000
         });
-        console.log('✅ Token balance:', { userType, paidTokens, totalTokens });
       } else {
-        console.log('⚠️ No profile found');
         setBalance(null);
       }
     } catch (error) {
@@ -87,29 +68,36 @@ export const TokenBalanceDisplay: React.FC<TokenBalanceDisplayProps> = ({ isExpa
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel(`token-balance-${user.uid}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.uid}`
-        },
-        (payload) => {
-          console.log('💰 Token balance updated via realtime:', payload);
-          // Refetch balance when profile changes
-          fetchBalance();
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', user.uid),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const profile = docSnapshot.data();
+          const tokensLimit = profile.tokensLimit || 0;
+          const tokensUsed = profile.tokensUsed || 0;
+          const totalTokens = tokensLimit - tokensUsed;
+          const plan = profile.plan || 'free';
+          const isPremium = plan === 'premium' || plan === 'paid';
+
+          setBalance({
+            tier: isPremium ? 'premium' : 'free',
+            dailyTokens: 0,
+            paidTokens: isPremium ? totalTokens : 0,
+            totalTokens,
+            canUsePaidModels: isPremium || totalTokens > 500000
+          });
         }
-      )
-      .subscribe();
+      },
+      (error) => {
+        console.error('Realtime token error:', error);
+      }
+    );
 
     // Refresh every 30 seconds as fallback
     const interval = setInterval(fetchBalance, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
       clearInterval(interval);
     };
   }, [user]);

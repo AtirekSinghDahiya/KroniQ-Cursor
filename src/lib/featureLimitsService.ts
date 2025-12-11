@@ -8,7 +8,8 @@ export type FeatureType =
   | 'video_generation'
   | 'music_generation'
   | 'tts_request'
-  | 'code_generation';
+  | 'code_generation'
+  | 'ppt_generation';
 
 export interface FeatureLimits {
   chat_messages_daily: number;
@@ -17,6 +18,7 @@ export interface FeatureLimits {
   music_daily: number;
   tts_daily: number;
   code_generations_daily: number;
+  ppt_daily: number;
 }
 
 export interface FeatureUsage {
@@ -26,6 +28,7 @@ export interface FeatureUsage {
   music: number;
   tts: number;
   code_generations: number;
+  ppt: number;
   last_reset: Date;
 }
 
@@ -43,7 +46,8 @@ const FREE_USER_LIMITS: FeatureLimits = {
   videos_daily: 2,
   music_daily: 5,
   tts_daily: 10,
-  code_generations_daily: 50
+  code_generations_daily: 50,
+  ppt_daily: 5
 };
 
 const PAID_USER_LIMITS: FeatureLimits = {
@@ -52,7 +56,8 @@ const PAID_USER_LIMITS: FeatureLimits = {
   videos_daily: -1,
   music_daily: -1,
   tts_daily: -1,
-  code_generations_daily: -1
+  code_generations_daily: -1,
+  ppt_daily: -1
 };
 
 export function getFeatureLimits(isPremium: boolean): FeatureLimits {
@@ -84,6 +89,7 @@ export async function getCurrentUsage(userId?: string): Promise<FeatureUsage | n
         music: 0,
         tts: 0,
         code_generations: 0,
+        ppt: 0,
         last_reset: new Date()
       };
     }
@@ -101,6 +107,7 @@ export async function getCurrentUsage(userId?: string): Promise<FeatureUsage | n
         music: 0,
         tts: 0,
         code_generations: 0,
+        ppt: 0,
         last_reset: now
       };
     }
@@ -112,6 +119,7 @@ export async function getCurrentUsage(userId?: string): Promise<FeatureUsage | n
       music: data.music_used || 0,
       tts: data.tts_used || 0,
       code_generations: data.code_generations || 0,
+      ppt: data.ppt_used || 0,
       last_reset: lastReset
     };
   } catch (error) {
@@ -223,7 +231,8 @@ export async function checkFeatureAccess(
     video_generation: { used: usage.videos, limit: limits.videos_daily },
     music_generation: { used: usage.music, limit: limits.music_daily },
     tts_request: { used: usage.tts, limit: limits.tts_daily },
-    code_generation: { used: usage.code_generations, limit: limits.code_generations_daily }
+    code_generation: { used: usage.code_generations, limit: limits.code_generations_daily },
+    ppt_generation: { used: usage.ppt, limit: limits.ppt_daily }
   };
 
   const feature = featureMap[featureType];
@@ -262,7 +271,8 @@ export async function incrementUsage(
       video_generation: 'videos_used',
       music_generation: 'music_used',
       tts_request: 'tts_used',
-      code_generation: 'code_generations'
+      code_generation: 'code_generations',
+      ppt_generation: 'ppt_used'
     };
 
     const column = columnMap[featureType];
@@ -324,7 +334,8 @@ export async function getAllUsageStats(userId?: string): Promise<Record<FeatureT
     'video_generation',
     'music_generation',
     'tts_request',
-    'code_generation'
+    'code_generation',
+    'ppt_generation'
   ];
 
   const stats: Record<string, FeatureAccessResult> = {};
